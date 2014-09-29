@@ -2,8 +2,9 @@
 """
 Created on Tue Aug  5 09:03:22 2014
 
-Translated, debugged, and completed by Samuel Musilli from code originally in Matlab 
-by James T. Sayre. Most comments are copied from his original code and are not my own. 
+Translated, debugged, and completed by Samuel Musilli from code 
+originally in Matlab by James T. Sayre and John Ruhl. 
+Most comments are copied from their original code and are not my own. 
 However, they may be adjusted if they refer to Matlab-specific grammar.
 """
 def optical_calcs(data, datasrc):
