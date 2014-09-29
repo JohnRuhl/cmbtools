@@ -10,7 +10,8 @@ However, they may be adjusted if they refer to Matlab-specific grammar.
 def optical_calcs(data, datasrc):
     #input optical properties:
     # sources (eg CMB, atmos, 100K): eps(nu_vector), T
-    # note: to investigate band edge placement, need eps(nu) for atmosphere, ie line effects
+    # note: to investigate band edge placement, 
+    # 	need eps(nu) for atmosphere, ie line effects
     #input sources are those in the datasrcX dictionaries
 
     #outputs:
@@ -27,39 +28,53 @@ def optical_calcs(data, datasrc):
     #This is P referred to the bolometer
     #global data, datasrc
     from operator import add
+
     AOmega = data['Nmodes'] * c**2 / numpy.power(data['nu'],2)
     prefactor = float(data['tau']*data['eta']*data['Npol']*data['Nmodes'])
     RJintegrand = numpy.empty(len(data['nu']), dtype = float)
+
     for i in range(len(data['nu'])):
         RJintegrand[i] = (i+1)*prefactor*k
+
     data['dPdT_RJ'] = numpy.trapz(data['nu'], RJintegrand)
+
     x = numpy.longdouble(h*data['nu']/(k*T_cmb)) #longdouble here
     integrand2 = AOmega*(prefactor*h**2*(numpy.power(data['nu'],4)))*numpy.exp(x)/\
     (k*(c**2)*(T_cmb**2)*(numpy.exp(x)-1.0)**2)
     data['dPdT_cmb'] = numpy.trapz(data['nu'], integrand2)
+
     NEP2_photon_total = 0.0
     data['Qtot'] = 0.0
     for i in range(len(datasrc)):
         x = h*data['nu']/(k*datasrc[i]['T'])
-#occupation number; this is eps*eta*tau*band/(e^x -1). band*tau is freq-dependent optical efficiency
+	#occupation number; this is eps*eta*tau*band/(e^x -1). band*tau is freq-dependent optical efficiency
         n = datasrc[i]['eps']*data['eta']*datasrc[i]['tau']*data['band']\
         /numpy.longdouble((numpy.exp(x)-float(1))) #longdouble here
+
+	# [JR]  I don't get the need for this.  
+	# 	How can you get a negative occupation number in the first place?
         if n[0] > n[1]: #Maybe? Need a positive value and for CMB will lead to negative NEP2_photon
             n = numpy.flipud(n)
-#power per mode per Hz
+
+	#power per mode per Hz
         P = h*data['nu']*n
-#total power integrated across band
+
+	#total power integrated across band
         datasrc[i]['Q'] = numpy.trapz(data['nu'], P)
         datasrc[i]['T_RJ'] = datasrc[i]['Q']/data['dPdT_RJ']
-#phonon noise integral
+
+	#phonon noise integral
         integrand = 2*((h**2)*(data['nu']**2))*(2*data['Nmodes']*data['Npol'])*map(add,n,n**2)
         NEP2_photon = numpy.trapz(data['nu'],integrand)
         datasrc[i]['NEP_photon'] = numpy.sqrt(NEP2_photon)
         datasrc[i]['NET_photon_cmb'] = datasrc[i]['NEP_photon'] / data['dPdT_cmb']
         datasrc[i]['NET_photon_RJ'] = datasrc[i]['NEP_photon'] / data['dPdT_RJ']
-#sum to get total
+
+	#sum to get total
         data['Qtot'] = data['Qtot'] + datasrc[i]['Q']
         NEP2_photon_total = add(NEP2_photon_total, NEP2_photon)
+        # ------ ends loop over sources ----------------------------------
+
     data['T_RJ_tot'] = data['Qtot']/data['dPdT_RJ']
     data['NEP_photon_total'] = numpy.sqrt(NEP2_photon_total)
     data['NET_photon_total_RJ'] = data['NEP_photon_total']/data['dPdT_RJ']
