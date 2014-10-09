@@ -49,7 +49,7 @@ def monteCarloGen(xList, aTrue, bTrue, std):
     plt.plot(plotList, [plotFit[0] + plotFit[1]*x for x in plotList])
     
     plt.figure(1)
-    plt.bar(histoDataB[1][0:-1], histoDataB[0])
+    plt.bar(histoDataB[1][0:-1], histoDataB[0], histoDataB[1][1]-histoDataB[1][0])
     
     plt.figure(2)
-    plt.bar(histoDataA[1][0:-1], histoDataA[0])
+    plt.bar(histoDataA[1][0:-1], histoDataA[0], histoDataA[1][1]-histoDataA[1][0])
