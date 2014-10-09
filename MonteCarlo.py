@@ -38,9 +38,13 @@ def monteCarloGen(xList, aTrue, bTrue, std):
         bList.append(results[1])
         rSquareList.append(results[2])
     
-    histoDataA = np.histogram(aList)
-    histoDataB = np.histogram(bList)
+    if iterations > 10000:
+        binNumber = 1000
+    else:
+        binNumber = iterations/10
     
+    histoDataA = np.histogram(aList, binNumber)
+    histoDataB = np.histogram(bList, binNumber)
     
     plt.figure(0)
     plotFit = fit.linearFit(aList, bList)
