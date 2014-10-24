@@ -11,7 +11,11 @@ def optical_calcs(data, datasrc):
     # sources (eg CMB, atmos, 100K): eps(nu_vector), T
     # note: to investigate band edge placement, need eps(nu) for atmosphere, ie line effects
     #input sources are those in the datasrcX dictionaries
-
+    c = 299792456.0
+    h = 6.626068e-34
+    k = 1.3806503e-23
+    T_cmb = 2.725
+    import numpy
     #outputs:
     #data[dPdT_cmb] (band average)
     #data[dPdT_RJ] (band average)
@@ -30,29 +34,30 @@ def optical_calcs(data, datasrc):
     prefactor = float(data['tau']*data['eta']*data['Npol']*data['Nmodes'])
     RJintegrand = numpy.empty(len(data['nu']), dtype = float)
     for i in range(len(data['nu'])):
-        RJintegrand[i] = (i+1)*prefactor*k
-    data['dPdT_RJ'] = numpy.trapz(data['nu'], RJintegrand)
-    x = numpy.longdouble(h*data['nu']/(k*T_cmb)) #longdouble here
-    integrand2 = AOmega*(prefactor*h**2*(numpy.power(data['nu'],4)))*numpy.exp(x)/\
-    (k*(c**2)*(T_cmb**2)*(numpy.exp(x)-1.0)**2)
-    data['dPdT_cmb'] = numpy.trapz(data['nu'], integrand2)
+        RJintegrand[i] = prefactor*k
+    #print RJintegrand
+    #print data['nu']
+    data['dPdT_RJ'] = numpy.trapz(RJintegrand, data['nu'])
+    x = numpy.array(numpy.longdouble(h*data['nu']/(k*T_cmb))) #longdouble here
+    integrand2 = numpy.array(AOmega*(prefactor*h**2*(numpy.power(data['nu'],4)))*numpy.exp(x)/\
+    (k*(c**2)*(T_cmb**2)*(numpy.exp(x)-1.0)**2))
+    data['dPdT_cmb'] = numpy.trapz(integrand2, data['nu'])
     NEP2_photon_total = 0.0
     data['Qtot'] = 0.0
     for i in range(len(datasrc)):
-        x = h*data['nu']/(k*datasrc[i]['T'])
+        x = numpy.array(h*data['nu']/(k*datasrc[i]['T']))
 #occupation number; this is eps*eta*tau*band/(e^x -1). band*tau is freq-dependent optical efficiency
-        n = datasrc[i]['eps']*data['eta']*datasrc[i]['tau']*data['band']\
-        /numpy.longdouble((numpy.exp(x)-float(1))) #longdouble here
-        if n[0] > n[1]: #Maybe? Need a positive value and for CMB will lead to negative NEP2_photon
-            n = numpy.flipud(n)
+        n = numpy.array(datasrc[i]['eps']*data['eta']*datasrc[i]['tau']*data['band']\
+        /numpy.longdouble((numpy.exp(x)-float(1)))) #longdouble here
 #power per mode per Hz
         P = h*data['nu']*n
 #total power integrated across band
-        datasrc[i]['Q'] = numpy.trapz(data['nu'], P)
+        datasrc[i]['Q'] = numpy.trapz(P, data['nu'])
         datasrc[i]['T_RJ'] = datasrc[i]['Q']/data['dPdT_RJ']
 #phonon noise integral
-        integrand = 2*((h**2)*(data['nu']**2))*(2*data['Nmodes']*data['Npol'])*map(add,n,n**2)
-        NEP2_photon = numpy.trapz(data['nu'],integrand)
+        integrand = 2*((h**2)*(data['nu']**2))*(data['Nmodes']*data['Npol'])*(n+n**2)
+        #print n, n**2, map(add,n,n**2)
+        NEP2_photon = numpy.trapz(integrand, data['nu'])
         datasrc[i]['NEP_photon'] = numpy.sqrt(NEP2_photon)
         datasrc[i]['NET_photon_cmb'] = datasrc[i]['NEP_photon'] / data['dPdT_cmb']
         datasrc[i]['NET_photon_RJ'] = datasrc[i]['NEP_photon'] / data['dPdT_RJ']
@@ -69,7 +74,7 @@ def bolo_calcs(data):
     #does calculations relevant to bolometer responsivity, NEP and NEI for thermal
     #fluctuation (G), Johnson, and readout noise.
     #Inputs and outputs all live in 'data' structure
-    import math
+    import math, numpy
     #physical constants in SI units
     c = 299792456.0
     h = 6.626068e-34
@@ -256,12 +261,12 @@ def bolo_play(band, band_width, eta):
     data['Npol'] = 1.0
     data['Nmodes'] = 1.0
     data['eta'] = eta
-    data['tau'] = .018/data['eta']
+    data['tau'] = 1.0 #.018/data['eta']
     data['L'] = 0.6 #scattering
     
     #source parameters for CMB
     datasrc1 = {'name':'CMB', 'eps':1, 'T':2.725, 'tau':data['tau']}
-    datasrc2 = {'name':'atm', 'eps':1, 'T':230.0, 'tau':data['tau']}
+    datasrc2 = {'name':'atm', 'eps':0.097, 'T':230.0, 'tau':data['tau']} 
     datasrc = [datasrc1, datasrc2]
     
     optical_calcs(data, datasrc)
