@@ -4,14 +4,13 @@ Created on Mon Oct 20 10:40:17 2014
 
 @author: sam
 """
-
+global c, h, k, T_cmb, numpy
 import numpy, scipy, math, bolo_module
 #physical constants in SI units
 c = float(299792456)
 h = 6.626068e-34
 k = 1.3806503e-23
 T_cmb = 2.725 #Kelvin
-global c, h, k, T_cmb, numpy
 #optical properties:
 #sources (eg CMB, atmos, 100K): eps(nu_vector), T
 # note: to investigate band edge placement, need eps(nu) for atmosphere, ie line effects
@@ -46,7 +45,18 @@ data['Nmodes'] = 1.0
 data['eta'] = .176
 data['tau'] = 1.0 #.018/data['eta']
 data['L'] = 0.6 #scattering
-
+data['R_bolo'] = 0.9 #ohms (operating point)
+data['R_load'] = 0.03 #ohms (shunt)
+data['alpha'] = 10.0 #d(logR) / d(logT) at operating point
+data['beta'] = 0.0 #d(logR) / d(logT) at fixed T
+data['tau_0'] = 0.010 #seconds, = C/G
+data['tau_electronics'] = 0.0001 #wild guess - need to figure this out
+data['NEI_squid'] = float(5e-9) #wild guess
+ #Bolometer parameters
+data['n'] = 3.0 #G index - 3 for insulators
+data['T_bolo'] = 0.5
+data['T_base'] = 0.28
+    #note: we use W, n, and these T's to calculate dynamic G
 #source parameters for CMB
 datasrc1 = {'name':'CMB', 'eps':1., 'T':2.725, 'tau':data['tau']}
 datasrc2 = {'name':'atm', 'eps':0.097, 'T':230.0, 'tau':data['tau']} 
@@ -68,6 +78,9 @@ datasrc = [datasrc1, datasrc2, datasrc3, datasrc4, datasrc5, datasrc6, datasrc7,
 datasrc9, datasrc10, datasrc11, datasrc12, datasrc13, datasrc14, datasrc15, datasrc16]
     
 bolo_module.optical_calcs(data, datasrc)
+data['W'] = 2*data['Qtot'] #total power to put bolo at operating point
+#data['Qtot'] (calculated by optical_calcs, or explicitly defined if you don't run that)
+    #note: P_elec = data['W'] - data['Qtot']
 bolo_module.bolo_calcs(data)
 
 print 'Qtot='+str(data['Qtot'])
