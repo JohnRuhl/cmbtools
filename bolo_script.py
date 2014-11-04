@@ -83,18 +83,18 @@ data['W'] = 2*data['Qtot'] #total power to put bolo at operating point
     #note: P_elec = data['W'] - data['Qtot']
 bolo_module.bolo_calcs(data)
 
-print 'Qtot='+str(data['Qtot'])
-print 'T_RJ_tot = '+str(data['T_RJ_tot'])
-print 'dPdT_RJ = '+str(data['dPdT_RJ'])
-print 'dPdT_cmb = '+str(data['dPdT_cmb'])
-print 'NEP_photon_total = '+str(data['NEP_photon_total'])
-print 'NET_photon_total_RJ = '+str(data['NET_photon_total_RJ'])
-print 'NET_photon_total_cmb = '+str(data['NET_photon_total_cmb'])
+print 'Qtot=' "%.3e" %data['Qtot']
+print 'T_RJ_tot = ' "%.3e" %data['T_RJ_tot']
+print 'dPdT_RJ = ' "%.3e" %data['dPdT_RJ']
+print 'dPdT_cmb = ' "%.3e" %data['dPdT_cmb']
+print 'NEP_photon_total = ' "%.3e" %data['NEP_photon_total']
+print 'NET_photon_total_RJ = ' "%.3e" %data['NET_photon_total_RJ']
+print 'NET_photon_total_cmb = ' "%.3e" %data['NET_photon_total_cmb']
     
 for i in range(len(datasrc)):
-    print 'Source: '+str(datasrc[i]['name'])
-    print 'Q: '+str(datasrc[i]['Q'])
-    print 'T_RJ: '+str(datasrc[i]['T_RJ'])
-    print 'NEP_photon = '+str(datasrc[i]['NEP_photon'])
-    print 'NET_photon_RJ = '+str(datasrc[i]['NET_photon_RJ'])
-    print 'NET_photon_cmb = '+str(datasrc[i]['NET_photon_cmb'])
+    print 'Source:' + datasrc[i]['name']
+    print 'Q: '"%.3e" %datasrc[i]['Q']
+    print 'T_RJ: ' "%.3e" %datasrc[i]['T_RJ']
+    print 'NEP_photon = ' "%.3e" %datasrc[i]['NEP_photon']
+    print 'NET_photon_RJ = ' "%.3e" %datasrc[i]['NET_photon_RJ']
+    print 'NET_photon_cmb = ' "%.3e" %datasrc[i]['NET_photon_cmb']
