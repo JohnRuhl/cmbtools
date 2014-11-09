@@ -33,6 +33,7 @@ def bolo_play(band, band_width, eta):
     #set up data structure
     data = {'nuGHZ':numpy.arange(band - 0.5*band_width, band + 0.5*band_width,0.1, dtype = float)}
     data['nu'] = data['nuGHZ']*float(1e9)
+
     #for i in range(len(data['nu'])):
     #    data['nu'][i] = Decimal(data['nu'][i])
     #nu = []
@@ -48,7 +49,7 @@ def bolo_play(band, band_width, eta):
     
     #source parameters for CMB
     datasrc1 = {'name':'CMB', 'eps':1, 'T':2.725, 'tau':data['tau']}
-    datasrc2 = {'name':'atm', 'eps':1, 'T':230.0, 'tau':data['tau']}
+    datasrc2 = {'name':'atm', 'eps':0.1, 'T':230.0, 'tau':data['tau']}
     datasrc = [datasrc1, datasrc2]
     
     bolo_functions.optical_calcs(data, datasrc)
