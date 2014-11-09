@@ -16,7 +16,16 @@ def optical_calcs(data, datasrc):
     k = 1.3806503e-23
     T_cmb = 2.725
     import numpy
-    #outputs:
+
+    #input optical properties are in datasrc dictionaries.
+    #One source per dictionary index, eg datasrc[i]['field']
+    # sources (eg CMB or atmosphere or optical elements...): eps(nu_vector), T
+    # note: to investigate band edge placement, 
+    # 	need eps(nu) for atmosphere, ie line effects
+
+    #outputs go to both datasrc dictionaries (to store something associated with that source) and 
+    #data dictionary.
+    # 
     #data[dPdT_cmb] (band average)
     #data[dPdT_RJ] (band average)
     #datasrcX[Q] (optical power)
@@ -122,7 +131,7 @@ def bolo_calcs(data):
     RL = data['R_load']
     tau_0 = data['tau_0']
     tau_el = data['tau_electronics']
-    L = data['L'] #SQUID input inductance? Or scattering?
+    L = data['L'] #inductance.  Not sure what that is for fmux, but I think it's the full series inductor.
     Tbolo = data['T_bolo']
     Tbase = data['T_base']
     beta = data['beta']
@@ -152,7 +161,7 @@ def bolo_calcs(data):
     #time constant for constant-current fluctuations
     tau_i = tau_0/(1-Lg)
     
-    #calculate tau+/- from Irwin & Hilton section 2.3
+    #calculate tau+/- from Irwin & Hilton section 2.3, table 1
     A = 1/(2*tau_el)+1/(2*tau_i)
     B = .5*numpy.sqrt((1/tau_el -1/tau_i)**2 - 4*R0/L*(Lg*(2+beta)/tau_0))
     tau_p = 1/(A+B)
@@ -378,3 +387,4 @@ def plot_temp(band, band_width, eta):
     plot.title('NET vs. T_bolo over band '+str(band)+' GHz')    
     plot.show()
     #print data['NET_photon_totals']
+
