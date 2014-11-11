@@ -3,28 +3,27 @@
 Created on Tue Aug  5 09:03:22 2014
 
 Translated, debugged, and completed by Samuel Musilli from code originally in Matlab 
-by James T. Sayre. Most comments are copied from his original code and are not my own. 
+by James T. Sayre as adapted from John Ruhl's code. 
+
+Most comments are copied from JT's original code and are not my own. 
 However, they may be adjusted if they refer to Matlab-specific grammar.
 """
 def optical_calcs(data, datasrc):
-    #input optical properties:
-    # sources (eg CMB, atmos, 100K): eps(nu_vector), T
-    # note: to investigate band edge placement, need eps(nu) for atmosphere, ie line effects
-    #input sources are those in the datasrcX dictionaries
     c = 299792456.0
     h = 6.626068e-34
     k = 1.3806503e-23
     T_cmb = 2.725
+
     import numpy
+    from operator import add
 
     #input optical properties are in datasrc dictionaries.
     #One source per dictionary index, eg datasrc[i]['field']
     # sources (eg CMB or atmosphere or optical elements...): eps(nu_vector), T
-    # note: to investigate band edge placement, 
-    # 	need eps(nu) for atmosphere, ie line effects
 
-    #outputs go to both datasrc dictionaries (to store something associated with that source) and 
-    #data dictionary.
+    #outputs go to both 
+    #   (a) the datasrc dictionaries (to store something associated with that source) and 
+    #   (b) the data dictionary.
     # 
     #data[dPdT_cmb] (band average)
     #data[dPdT_RJ] (band average)
@@ -35,44 +34,65 @@ def optical_calcs(data, datasrc):
     #data[Qtot]
     #data[]
 
-    #calculate dP/dT_RJ and dP/dT_cmb. This is P referred to the bolometer.
-    #This is P referred to the bolometer
-    #global data, datasrc
-    from operator import add
-    AOmega = data['Nmodes'] * c**2 / numpy.power(data['nu'],2)
+    # First we calculate dP/dT_RJ and dP/dT_cmb, where these are defined as being
+    #  the change in optical power absorbed by the bolometer for a small temperature
+    #  change in a source in the sky.
+    #
+    # AOmega = n_modes * Lambda**2
+    #AOmega = data['Nmodes'] * c**2 / numpy.power(data['nu'],2)
+    AOmega = data['Nmodes'] * c**2 / data['nu']**2
+
+    # dP/dT_RJ
+    #  Note that eta*tau is the optical efficiency from the sky to the bolo.
+    #    eta is the bolometer absorption efficiency.
+    #    taus is the rest of the element's efficiency, so eta*tau is the total optical efficiency.
     prefactor = float(data['tau']*data['eta']*data['Npol']*data['Nmodes'])
-    RJintegrand = numpy.empty(len(data['nu']), dtype = float)
-    for i in range(len(data['nu'])):
-        RJintegrand[i] = prefactor*k
-    #print RJintegrand
-    #print data['nu']
+    RJintegrand = k*prefactor*numpy.ones(len(data['nu']))
     data['dPdT_RJ'] = numpy.trapz(RJintegrand, data['nu'])
-    x = numpy.array(numpy.longdouble(h*data['nu']/(k*T_cmb))) #longdouble here
-    integrand2 = numpy.array(AOmega*(prefactor*h**2*(numpy.power(data['nu'],4)))*numpy.exp(x)/\
-    (k*(c**2)*(T_cmb**2)*(numpy.exp(x)-1.0)**2))
+
+    # dP/dT_cmb
+    x = h*data['nu']/(k*T_cmb)
+    integrand2 = AOmega*(prefactor*h**2*(numpy.power(data['nu'],4)))*numpy.exp(x)/\
+    (k*(c**2)*(T_cmb**2)*(numpy.exp(x)-1.0)**2)
     data['dPdT_cmb'] = numpy.trapz(integrand2, data['nu'])
+
+    # calculate NEP's etc for each source.
     NEP2_photon_total = 0.0
     data['Qtot'] = 0.0
+    eta_tot = 1.0
     for i in range(len(datasrc)):
-        x = numpy.array(h*data['nu']/(k*datasrc[i]['T']))
-#occupation number; this is eps*eta*tau*band/(e^x -1). band*tau is freq-dependent optical efficiency
-        n = numpy.array(datasrc[i]['eps']*data['eta']*datasrc[i]['tau']*data['band']\
-        /numpy.longdouble((numpy.exp(x)-float(1)))) #longdouble here
-#power per mode per Hz
+        x = h*data['nu']/(k*datasrc[i]['T'])
+
+        #occupation number; this is eps*eta_tot*band/(e^x -1). 
+        # band*tau is freq-dependent, and n the case of tau element-dependent, optical efficiency
+        n = datasrc[i]['eps']*eta_tot*data['band']\
+        /numpy.longdouble((numpy.exp(x)-float(1)))
+
+        #power per mode per Hz
         P = h*data['nu']*n
-#total power integrated across band
+
+        #total power integrated across band
         datasrc[i]['Q'] = numpy.trapz(P, data['nu'])
         datasrc[i]['T_RJ'] = datasrc[i]['Q']/data['dPdT_RJ']
-#phonon noise integral
+
+        #phonon noise integral
         integrand = 2*((h**2)*(data['nu']**2))*(data['Nmodes']*data['Npol'])*(n+n**2)
+
         #print n, n**2, map(add,n,n**2)
         NEP2_photon = numpy.trapz(integrand, data['nu'])
         datasrc[i]['NEP_photon'] = numpy.sqrt(NEP2_photon)
         datasrc[i]['NET_photon_cmb'] = datasrc[i]['NEP_photon'] / data['dPdT_cmb']
         datasrc[i]['NET_photon_RJ'] = datasrc[i]['NEP_photon'] / data['dPdT_RJ']
-#sum to get total
+        datasrc[i]['eta_to_bolo'] = eta_tot
+
+        # update eta_tot for the next loop through here
+        # eta_tot is the optical effiency between the relevant element and the bolo.
+        eta_tot = eta_tot*datasrc[i]['tau']
+
+        #sum to get total
         data['Qtot'] = data['Qtot'] + datasrc[i]['Q']
         NEP2_photon_total = add(NEP2_photon_total, NEP2_photon)
+
     data['T_RJ_tot'] = data['Qtot']/data['dPdT_RJ']
     data['NEP_photon_total'] = numpy.sqrt(NEP2_photon_total)
     data['NET_photon_total_RJ'] = data['NEP_photon_total']/data['dPdT_RJ']

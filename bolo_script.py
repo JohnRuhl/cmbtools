@@ -15,8 +15,6 @@ T_cmb = 2.725 #Kelvin
 
 #optical properties:
 #sources (eg CMB, atmos, 100K): eps(nu_vector), T
-# note: to investigate band edge placement, need eps(nu) for atmosphere, ie line effects
-#data.
 #datasrc1[name]
 #datasrc1[eps]
 #datasrc1[T]
@@ -58,29 +56,30 @@ data['NEI_squid'] = float(5e-9) #wild guess
  #Bolometer parameters
 data['n'] = 3.0 #G index - 3 for insulators
 data['T_bolo'] = 0.5
-data['T_base'] = 0.28
-    #note: we use W, n, and these T's to calculate dynamic G
-#source parameters for CMB
-datasrc1 = {'name':'CMB', 'eps':1., 'T':2.725, 'tau':data['tau']}
-datasrc2 = {'name':'atm', 'eps':0.097, 'T':230.0, 'tau':data['tau']} 
-datasrc3 = {'name':'antenna', 'eps':0., 'T':0.25, 'tau':data['tau']}
-datasrc4 = {'name':'lenslet', 'eps':0., 'T':0.25, 'tau':data['tau']}
-datasrc5 = {'name':'collimating lens', 'eps':0.052, 'T':5.0, 'tau':data['tau']}
-datasrc6 = {'name':'stop', 'eps':0.684, 'T':5.0, 'tau':data['tau']}
-datasrc7 = {'name':'lens filter 1', 'eps':0.05, 'T':5.0, 'tau':data['tau']}
-datasrc8 = {'name':'lens filter 2', 'eps':0.05, 'T':5.0, 'tau':data['tau']}
-datasrc9 = {'name':'aperture lens', 'eps':0.052, 'T':5.0, 'tau':data['tau']}
-datasrc10 = {'name':'nylon filter', 'eps':0.02, 'T':5.0, 'tau':data['tau']}
-datasrc11 = {'name':'field lens', 'eps':0.052, 'T':6.0, 'tau':data['tau']}
-datasrc12 = {'name':'IR shader', 'eps':0.02, 'T':50.0, 'tau':data['tau']}
-datasrc13 = {'name':'window alumina', 'eps':0.013, 'T':60.0, 'tau':data['tau']}
-datasrc14 = {'name':'flat mirror', 'eps':0.01, 'T':280., 'tau':data['tau']}
-datasrc15 = {'name':'secondary', 'eps':0.01, 'T':280., 'tau':data['tau']}
-datasrc16 = {'name':'primary', 'eps':0.01, 'T':220., 'tau':data['tau']}
+data['T_base'] = 0.28 #note: we use W, n, and these T's to calculate dynamic G
+
+# These need to be in order, from detector to CMB
+datasrc1 = {'name':'antenna', 'eps':0., 'T':0.25, 'tau':0.948}
+datasrc2 = {'name':'lenslet', 'eps':0., 'T':0.25, 'tau':0.95}
+datasrc3 = {'name':'collimating lens', 'eps':0.052, 'T':5.0, 'tau':0.928}
+datasrc4 = {'name':'stop', 'eps':0.684, 'T':5.0, 'tau':0.316}
+datasrc5 = {'name':'lens filter 1', 'eps':0.05, 'T':5.0, 'tau':0.95}
+datasrc6 = {'name':'lens filter 2', 'eps':0.05, 'T':5.0, 'tau':0.95}
+datasrc7 = {'name':'aperture lens', 'eps':0.052, 'T':5.0, 'tau':0.948}
+datasrc8 = {'name':'nylon filter', 'eps':0.02, 'T':5.0, 'tau':0.98}
+datasrc9 = {'name':'field lens', 'eps':0.052, 'T':6.0, 'tau':0.948}
+datasrc10 = {'name':'IR shader', 'eps':0.02, 'T':50.0, 'tau':0.98}
+datasrc11 = {'name':'window alumina', 'eps':0.013, 'T':60.0, 'tau':0.987}
+datasrc12 = {'name':'flat mirror', 'eps':0.01, 'T':280., 'tau':0.989}
+datasrc13 = {'name':'secondary', 'eps':0.01, 'T':280., 'tau':0.984}
+datasrc14 = {'name':'primary', 'eps':0.01, 'T':220., 'tau':0.99}
+datasrc15 = {'name':'atm', 'eps':0.097, 'T':230.0, 'tau':0.903} 
+datasrc16 = {'name':'CMB', 'eps':1., 'T':2.725, 'tau':1.0}
 datasrc = [datasrc1, datasrc2, datasrc3, datasrc4, datasrc5, datasrc6, datasrc7, datasrc8,\
 datasrc9, datasrc10, datasrc11, datasrc12, datasrc13, datasrc14, datasrc15, datasrc16]
     
 bolo_module.optical_calcs(data, datasrc)
+
 
 data['W'] = 2*data['Qtot'] #total power to put bolo at operating point
 #data['Qtot'] (calculated by optical_calcs, or explicitly defined if you don't run that)
@@ -88,12 +87,19 @@ data['W'] = 2*data['Qtot'] #total power to put bolo at operating point
 bolo_module.bolo_calcs(data)
 
 print '               Source',
-print '  Q         T_RJ      NEP_photon  NET_photon_RJ NET_photon_cmb'
+print '  eps ',
+print '   T_src',
+print '   eta_to_bolo',
+print '   Q',
+print '       T_RJ',
+print '  NEP_photon  NET_photon_RJ NET_photon_cmb'
 for i in range(len(datasrc)):
     print "%20s" %datasrc[i]['name'],
-    #print ' Q: '"%.3e" %datasrc[i]['Q'],
+    print "%7.3f" %datasrc[i]['eps'],
+    print "%7.1f" %datasrc[i]['T'],
+    print "%7.3f" %datasrc[i]['eta_to_bolo'],
     print "%10.3e" %datasrc[i]['Q'],
-    print "%10.3e" %datasrc[i]['T_RJ'],
+    print "%7.1f" %datasrc[i]['T_RJ'],
     print "%10.3e" %datasrc[i]['NEP_photon'],
     print "%12.3e" %datasrc[i]['NET_photon_RJ'],
     print "%12.3e" %datasrc[i]['NET_photon_cmb']
