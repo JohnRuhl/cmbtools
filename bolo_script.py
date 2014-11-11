@@ -33,28 +33,23 @@ band_width = 25.8  # GHz
 band = 94.6  #GHz
 data = {'nuGHZ':numpy.arange(band - 0.5*band_width, band + 0.5*band_width,band_width/1000., dtype = float)}
 data['nu'] = data['nuGHZ']*float(1e9)
-
-#for i in range(len(data['nu'])):
-#    data['nu'][i] = Decimal(data['nu'][i])
-#nu = []
-#for i in range(len(data['nuGHZ'])):    
-#    nu.append(Decimal(data['nuGHZ'][i]*1e9))
-#data['nu'] = nu
 data['band'] = numpy.ones(len(data['nu']),float)
+
+# Set up bolo parameters
 data['Npol'] = 1.0
 data['Nmodes'] = 1.0
 data['eta'] = .176
 data['tau'] = 1.0 #.018/data['eta']
-data['L'] = 0.6 #scattering
+data['L'] = 0.6 #scattering?
 data['R_bolo'] = 0.9 #ohms (operating point)
 data['R_load'] = 0.03 #ohms (shunt)
-data['alpha'] = 10.0 #d(logR) / d(logT) at operating point
+data['alpha'] = 30.0 #d(logR) / d(logT) at operating point
 data['beta'] = 0.0 #d(logR) / d(logT) at fixed T
-data['tau_0'] = 0.010 #seconds, = C/G
-data['tau_electronics'] = 0.0001 #wild guess - need to figure this out
-data['NEI_squid'] = float(5e-9) #wild guess
+data['tau_0'] = 0.020 #seconds, = C/G
+data['tau_electronics'] = 0.001 #wild guess - need to figure this out
+data['NEI_squid'] = float(5e-15) #wild guess
  #Bolometer parameters
-data['n'] = 3.0 #G index - 3 for insulators
+data['n'] = 2.7 #G index - 3 for insulators
 data['T_bolo'] = 0.5
 data['T_base'] = 0.28 #note: we use W, n, and these T's to calculate dynamic G
 
@@ -86,6 +81,8 @@ data['W'] = 2*data['Qtot'] #total power to put bolo at operating point
     #note: P_elec = data['W'] - data['Qtot']
 bolo_module.bolo_calcs(data)
 
+
+# Print out a table of values for each source
 print '               Source',
 print '  eps ',
 print '   T_src',
@@ -104,13 +101,18 @@ for i in range(len(datasrc)):
     print "%12.3e" %datasrc[i]['NET_photon_RJ'],
     print "%12.3e" %datasrc[i]['NET_photon_cmb']
     
+# print out the totals
 print 'Total: ----------------------------------------------' 
 print '                  Qtot = ' "%10.3e" %data['Qtot']
 print '              T_RJ_tot = ' "%10.1f" %data['T_RJ_tot']
 print '               dPdT_RJ = ' "%10.3e" %data['dPdT_RJ']
 print '              dPdT_cmb = ' "%10.3e" %data['dPdT_cmb']
 print '      NEP_photon_total = ' "%10.3e" %data['NEP_photon_total']
+print '      NEP_phonon_total = ' "%10.3e" %data['Phonon']['NEP']
+print '     NEP_Johnson_total = ' "%10.3e" %data['Johnson']['NEP'][0]
+print '     NEP_Readout_total = ' "%10.3e" %data['Readout']['NEP'][0]
 print '   NET_photon_total_RJ = ' "%10.3e" %data['NET_photon_total_RJ']
 print '  NET_photon_total_cmb = ' "%10.3e" %data['NET_photon_total_cmb']
 print '-----------------------------------------------------' 
+
     

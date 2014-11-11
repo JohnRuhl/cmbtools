@@ -44,8 +44,8 @@ def optical_calcs(data, datasrc):
 
     # dP/dT_RJ
     #  Note that eta*tau is the optical efficiency from the sky to the bolo.
-    #    eta is the bolometer absorption efficiency.
-    #    taus is the rest of the element's efficiency, so eta*tau is the total optical efficiency.
+    #    data['eta'] is the "sky to bolo" total optical efficiency.
+    #    data['tau'] is vestigial, set to one.
     prefactor = float(data['tau']*data['eta']*data['Npol']*data['Nmodes'])
     RJintegrand = k*prefactor*numpy.ones(len(data['nu']))
     data['dPdT_RJ'] = numpy.trapz(RJintegrand, data['nu'])
@@ -101,7 +101,7 @@ def optical_calcs(data, datasrc):
     
 def bolo_calcs(data):
     #does calculations relevant to bolometer responsivity, NEP and NEI for thermal
-    #fluctuation (G), Johnson, and readout noise.
+    # fluctuation (G), Johnson, and readout noise.
     #Inputs and outputs all live in 'data' structure
     import math, numpy
     #physical constants in SI units
@@ -161,8 +161,10 @@ def bolo_calcs(data):
     #ratio of equivalent load resistance to Rbolo
     R_rat = RL/R0
     #set up T vector for phonon noise integral
-    T = numpy.arange(Tbase, Tbolo, 0.00001)
-    data['f'] = numpy.linspace(1.0,10.0,len(T))
+    T = numpy.arange(Tbase, Tbolo, (Tbolo-Tbase)/1000.)
+
+    # set up (audio) frequency vector, eg relevant for time constants/etc
+    data['f'] = numpy.arange(1.0,10.0,0.01)
     #convert frequency vector to radians for responsivity calculation
     w = 2*math.pi*data['f']
     
@@ -171,8 +173,8 @@ def bolo_calcs(data):
     kappa = data['W']/(Tbolo**n - Tbase**n)
     
     G = n*kappa*Tbolo**(n-1)
-    Lg = (data['W']*alpha/(G*Tbolo))
     P_el = data['W'] - data['Qtot'] 
+    Lg = (P_el*alpha/(G*Tbolo))
     I_0 = numpy.sqrt(P_el/R0)
     
     #effective time consant (for zero bias inductance ?????)
@@ -202,38 +204,37 @@ def bolo_calcs(data):
     #heat link integral (Mather 1982, eq 33)
     b = n-1
     F_Tbolo_Tbase = sum((T*(T**b)/(Tbolo*(Tbolo**b)))**2)/sum((T**b)/(Tbolo**b))
-    data['Phonon'] = {'NEP':4*k*Tbolo*R0*I_0**2*G*F_Tbolo_Tbase}
-    data['Phonon']['NEI'] = data['Phonon']['NEP']/abs(s_w)**2
+    data['Phonon'] = {'NEP':numpy.sqrt(4*k*Tbolo**2*G*F_Tbolo_Tbase)}
+    data['Phonon']['NEI'] = data['Phonon']['NEP']/abs(s_w)
     
-    #TES noise
+    #TES Johnson noise
     Si_tes = 4*k*Tbolo*R0*I_0**2*(1+w**2*tau_0**2)*abs(s_w)**2/Lg**2
     #load resistor noise (assume single resistor at 4K)
     T_L = 4.2
     Si_L = 4*k*T_L*I_0**2*RL*(Lg-1)**2*(1+w**2*tau_i**2)*abs(s_w)**2/Lg**2
     
-    data['Johnson'] = {'NEI':Si_tes+Si_L}
-    data['Johnson']['NEP'] = Si_tes/abs(s_w)**2 + Si_L/abs(s_w)**2
+    data['Johnson'] = {'NEI':numpy.sqrt(Si_tes+Si_L)}
+    data['Johnson']['NEP'] = data['Johnson']['NEI']/abs(s_w)
     
     #readout noise
-    
-    data['Readout'] = {'NEI':data['NEI_squid']**2} #originally NEI_readout, assumed to be NEI_squid
-    data['Readout']['NEP'] = data['Readout']['NEI']/abs(s_w)**2#Si_tes/abs(s_w)**2 + Si_L/abs(s_w)**2
+    data['Readout'] = {'NEI':data['NEI_squid']} #originally NEI_readout, assumed to be NEI_squid
+    data['Readout']['NEP'] = data['Readout']['NEI']/abs(s_w) #Si_tes/abs(s_w)**2 + Si_L/abs(s_w)**2
     
     #If we've done the optical calculations and have dPdT values, we can get
     #NET on the sky. Otherwise, return NET as 0.
     
     if 'dPdT_RJ' in data:
-        data['Phonon']['NET_RJ'] = data['Phonon']['NEP']/data['dPdT_RJ']**2
-        data['Johnson']['NET_RJ'] = data['Johnson']['NEP']/data['dPdT_RJ']**2
-        data['Readout']['NET_RJ'] = data['Readout']['NEP']/data['dPdT_RJ']**2
+        data['Phonon']['NET_RJ'] = data['Phonon']['NEP']/data['dPdT_RJ']
+        data['Johnson']['NET_RJ'] = data['Johnson']['NEP']/data['dPdT_RJ']
+        data['Readout']['NET_RJ'] = data['Readout']['NEP']/data['dPdT_RJ']
     else:
         data['Phonon']['NET_RJ'] = 0
         data['Johnson']['NET_RJ'] = 0
         data['Readout']['NET_RJ'] = 0
     if 'dPdT_cmb' in data:
-        data['Phonon']['NET_CMB'] = data['Phonon']['NEP']/data['dPdT_cmb']**2
-        data['Johnson']['NET_CMB'] = data['Johnson']['NEP']/data['dPdT_cmb']**2
-        data['Readout']['NET_CMB'] = data['Readout']['NEP']/data['dPdT_cmb']**2
+        data['Phonon']['NET_CMB'] = data['Phonon']['NEP']/data['dPdT_cmb']
+        data['Johnson']['NET_CMB'] = data['Johnson']['NEP']/data['dPdT_cmb']
+        data['Readout']['NET_CMB'] = data['Readout']['NEP']/data['dPdT_cmb']
     else: 
         data['Phonon']['NET_CMB'] = 0
         data['Johnson']['NET_CMB'] = 0
@@ -289,7 +290,7 @@ def bolo_play(band, band_width, eta):
     data['band'] = numpy.ones(len(data['nu']),float)
     data['Npol'] = 1.0
     data['Nmodes'] = 1.0
-    data['eta'] = eta
+    data['eta'] = eta   
     data['tau'] = 1.0 #.018/data['eta']
     data['L'] = 0.6 #scattering
     
@@ -315,7 +316,7 @@ def bolo_play(band, band_width, eta):
     data['beta'] = 0.0 #d(logR) / d(logT) at fixed T
     data['tau_0'] = 0.010 #seconds, = C/G
     data['tau_electronics'] = 0.0001 #wild guess - need to figure this out
-    data['NEI_squid'] = float(5e-9) #wild guess
+    data['NEI_squid'] = float(5e-12) #wild guess
     
     #do calculations...
     
