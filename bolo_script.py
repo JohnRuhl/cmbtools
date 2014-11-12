@@ -38,7 +38,7 @@ data['band'] = numpy.ones(len(data['nu']),float)
 # Set up bolo parameters
 data['Npol'] = 1.0
 data['Nmodes'] = 1.0
-data['eta'] = .176
+data['eta'] = .352  # optical efficiency from sky to bolo
 data['tau'] = 1.0 #.018/data['eta']
 data['L'] = 0.6 #scattering?
 data['R_bolo'] = 0.9 #ohms (operating point)
@@ -57,7 +57,7 @@ data['T_base'] = 0.28 #note: we use W, n, and these T's to calculate dynamic G
 datasrc1 = {'name':'antenna', 'eps':0., 'T':0.25, 'tau':0.948}
 datasrc2 = {'name':'lenslet', 'eps':0., 'T':0.25, 'tau':0.95}
 datasrc3 = {'name':'collimating lens', 'eps':0.052, 'T':5.0, 'tau':0.928}
-datasrc4 = {'name':'stop', 'eps':0.684, 'T':5.0, 'tau':0.316}
+datasrc4 = {'name':'stop', 'eps':.37, 'T':5.0, 'tau':0.63}
 datasrc5 = {'name':'lens filter 1', 'eps':0.05, 'T':5.0, 'tau':0.95}
 datasrc6 = {'name':'lens filter 2', 'eps':0.05, 'T':5.0, 'tau':0.95}
 datasrc7 = {'name':'aperture lens', 'eps':0.052, 'T':5.0, 'tau':0.948}
@@ -86,9 +86,9 @@ bolo_module.bolo_calcs(data)
 print '               Source',
 print '  eps ',
 print '   T_src',
-print '   eta_to_bolo',
-print '   Q',
-print '       T_RJ',
+print 'eta_to_bolo',
+print ' Q',
+print '     T_RJ',
 print '  NEP_photon  NET_photon_RJ NET_photon_cmb'
 for i in range(len(datasrc)):
     print "%20s" %datasrc[i]['name'],
@@ -100,6 +100,10 @@ for i in range(len(datasrc)):
     print "%10.3e" %datasrc[i]['NEP_photon'],
     print "%12.3e" %datasrc[i]['NET_photon_RJ'],
     print "%12.3e" %datasrc[i]['NET_photon_cmb']
+
+NEP_total = numpy.sqrt(data['NEP_photon_total']**2 + data['Phonon']['NEP']**2 + data['Johnson']['NEP']**2 + data['Readout']['NEP']**2)
+
+NET_cmb_total = NEP_total/data['dPdT_cmb']
     
 # print out the totals
 print 'Total: ----------------------------------------------' 
@@ -113,6 +117,8 @@ print '     NEP_Johnson_total = ' "%10.3e" %data['Johnson']['NEP'][0]
 print '     NEP_Readout_total = ' "%10.3e" %data['Readout']['NEP'][0]
 print '   NET_photon_total_RJ = ' "%10.3e" %data['NET_photon_total_RJ']
 print '  NET_photon_total_cmb = ' "%10.3e" %data['NET_photon_total_cmb']
+print '             NEP_total = ' "%10.3e" %NEP_total[0]
+print '         NET_cmb_total = ' "%10.3e" %NET_cmb_total[0]
 print '-----------------------------------------------------' 
 
     
