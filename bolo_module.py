@@ -278,20 +278,20 @@ def bolo_play(band, band_width, eta):
     #data[band]
     
     #set up data structure
-    data = {'nuGHZ':numpy.arange(band - 0.5*band_width, band + 0.5*band_width,0.1, dtype = float)}
-    data['nu'] = data['nuGHZ']*float(1e9)
+    data.data = {'nuGHZ':numpy.arange(band - 0.5*band_width, band + 0.5*band_width,0.1, dtype = float)}
+    data.data['nu'] = data.data['nuGHZ']*float(1e9)
     #for i in range(len(data['nu'])):
     #    data['nu'][i] = Decimal(data['nu'][i])
     #nu = []
     #for i in range(len(data['nuGHZ'])):    
     #    nu.append(Decimal(data['nuGHZ'][i]*1e9))
     #data['nu'] = nu
-    data['band'] = numpy.ones(len(data['nu']),float)
-    data['Npol'] = 1.0
-    data['Nmodes'] = 1.0
-    data['eta'] = eta
-    data['tau'] = 1.0 #.018/data['eta']
-    data['L'] = 0.6 #scattering
+    data.data['band'] = numpy.ones(len(data.data['nu']),float)
+    data.data['Npol'] = 1.0
+    data.data['Nmodes'] = 1.0
+    data.data['eta'] = eta
+    data.data['tau'] = 1.0 #.018/data['eta']
+    data.data['L'] = 0.6 #scattering
     
     #source parameters for CMB
     datasrc1 = {'name':'CMB', 'eps':1, 'T':2.725, 'tau':data['tau']}
