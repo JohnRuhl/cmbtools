@@ -39,6 +39,7 @@ data['band'] = numpy.ones(len(data['nu']),float)
 data['Npol'] = 1.0
 data['Nmodes'] = 1.0
 data['eta'] = .352  # optical efficiency from sky to bolo
+#data['eta'] = .173  # optical efficiency from sky to bolo
 data['tau'] = 1.0 #.018/data['eta']
 data['L'] = 0.6 #scattering?
 data['R_bolo'] = 0.9 #ohms (operating point)
@@ -58,6 +59,7 @@ datasrc1 = {'name':'antenna', 'eps':0., 'T':0.25, 'tau':0.948}
 datasrc2 = {'name':'lenslet', 'eps':0., 'T':0.25, 'tau':0.95}
 datasrc3 = {'name':'collimating lens', 'eps':0.052, 'T':5.0, 'tau':0.928}
 datasrc4 = {'name':'stop', 'eps':.37, 'T':5.0, 'tau':0.63}
+#datasrc4 = {'name':'stop', 'eps':.69, 'T':5.0, 'tau':0.31}
 datasrc5 = {'name':'lens filter 1', 'eps':0.05, 'T':5.0, 'tau':0.95}
 datasrc6 = {'name':'lens filter 2', 'eps':0.05, 'T':5.0, 'tau':0.95}
 datasrc7 = {'name':'aperture lens', 'eps':0.052, 'T':5.0, 'tau':0.948}
@@ -103,7 +105,7 @@ for i in range(len(datasrc)):
 
 NEP_total = numpy.sqrt(data['NEP_photon_total']**2 + data['Phonon']['NEP']**2 + data['Johnson']['NEP']**2 + data['Readout']['NEP']**2)
 
-NET_cmb_total = NEP_total/data['dPdT_cmb']
+NET_cmb_total = NEP_total/data['dPdT_cmb']/numpy.sqrt(2)  # uKrtsec rather than uK/rtHz
     
 # print out the totals
 print 'Total: ----------------------------------------------' 
@@ -118,7 +120,8 @@ print '     NEP_Readout_total = ' "%10.3e" %data['Readout']['NEP'][0]
 print '   NET_photon_total_RJ = ' "%10.3e" %data['NET_photon_total_RJ']
 print '  NET_photon_total_cmb = ' "%10.3e" %data['NET_photon_total_cmb']
 print '             NEP_total = ' "%10.3e" %NEP_total[0]
-print '         NET_cmb_total = ' "%10.3e" %NET_cmb_total[0]
+print '         NET_cmb_total = ' "%10.3e" %NET_cmb_total[0],
+print 'uKrtsec'
 print '-----------------------------------------------------' 
 
     

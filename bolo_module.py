@@ -195,6 +195,14 @@ def bolo_calcs(data):
     T3 = (1-tau_p/tau_i)/(1+1j*w*tau_p)
     T4 = (1-tau_m/tau_i)/(1+1j*w*tau_m)
     s_w = T1*T2*T3*T4
+    #### This was causing problems, T4 appears to be way too low...
+    #s_w = T1*numpy.ones(len(w))
+
+    data['Sdc'] = T1
+    data['T2'] = T2
+    data['T3'] = T3
+    data['T4'] = T4
+    data['s_w'] = s_w
     
     #Phonon (Thermal Fluctuation) noise
     #k integral = int{[(t*k(t))/(T*k(T))]^2dt}/int{[k(t)/k(T)]}
@@ -205,7 +213,7 @@ def bolo_calcs(data):
     b = n-1
     F_Tbolo_Tbase = sum((T*(T**b)/(Tbolo*(Tbolo**b)))**2)/sum((T**b)/(Tbolo**b))
     data['Phonon'] = {'NEP':numpy.sqrt(4*k*Tbolo**2*G*F_Tbolo_Tbase)}
-    data['Phonon']['NEI'] = data['Phonon']['NEP']/abs(s_w)
+    data['Phonon']['NEI'] = data['Phonon']['NEP']*abs(s_w)
     
     #TES Johnson noise
     Si_tes = 4*k*Tbolo*R0*I_0**2*(1+w**2*tau_0**2)*abs(s_w)**2/Lg**2
