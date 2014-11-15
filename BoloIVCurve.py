@@ -8,19 +8,23 @@ import numpy as np
 import numpy.polynomial.polynomial as poly
 import matplotlib.pyplot as plt
 #import pickle
-from scipy.optimize import curve_fit
+import scipy.optimize as sciopt
 
 #import csv
 
 def Findk(n, Tc, Tcs, Psat):
-   k = (Psat)/(Tc**n - Tcs**n)
-   return k
+    # finds "k" for bolometer leg thermal conductivity, Psat = k*(Tc**n - Tcs**n)
+    k = (Psat)/(Tc**n - Tcs**n)
+    return k
 
 def FitRT(Temps, Resists, Tc):
+    # Fits data (Tb,Rb)to the function RTFitFunc, 
+    # currently implemented as RTFitFunc(1,100,Tc,0)
+    # where RTFitFunc is the logistic equation ?? (Scott please correct this.)
     def RTFitFunc(t, a, b, c, d):
        return a/(1+np.exp(-b*(t-c))) + d
        
-    coefs, var = curve_fit(RTFitFunc, Temps, Resists, p0=(1, 100, Tc, 0))
+    coefs, var = sciopt.curve_fit(RTFitFunc, Temps, Resists, p0=(1, 100, Tc, 0))
     T = np.arange(0, np.amax(Temps), .0001)
     RT = np.array([])
     RT = np.append(RT, RTFitFunc(T, *coefs))
@@ -34,6 +38,7 @@ def FitRT(Temps, Resists, Tc):
     
     return RT, T, TransitionParameter, TcFromFit
 
+# Eventually take this out, as plotting should occur in the calling script
 def TestPlot(Voltage_at_min, Temps_data, Temps_data_n, Resists_data, n, k, Tcs, Tc, Current_at_min, Temp_at_min, Resists_from_fit, Temps_from_fit):
    #Plot R(T) and terms in function, to ensure zeros can be found in FindT
    #Also provides a visual check on the R(T) fit
@@ -154,6 +159,7 @@ def newton(func, x0, fprime=None, args=(), tol=1.48e-8, maxiter=50, fprime2=None
     raise RuntimeError(msg)
 
 def FindR(Resists,Temps,Ti):
+   # Given data (Resists,Temps), return an R that is appropriate for Ti via linear interpolation or extrapolation
    i = 0
  
    while (i == 0):
@@ -194,6 +200,12 @@ def FindT(Voltage, Resists_from_fit, Temps_from_fit, Temps_from_fit_n, n, k, Tcs
    """
    Finds the temperature of the bolometer for a specific voltage across the bolometer.
    Uses Newton's method to find where V^2/R = k(Tbolo^n - Tstage^n)
+    Voltage = bias voltage across bolometer,
+    (Resists_from_fit,Temps_from_fit) = bolometer resistance vs temperature relationship (data points)
+    Temps_from_fit_n = Temps_from_fit**n 
+    n = index of thermal leg conduction, Psat = k*(Tb**n - Tcs**n)
+    k = prefactor in that equation
+    Tcs = coldstage temp
    """
    
    funcValues = np.array([])
@@ -201,9 +213,9 @@ def FindT(Voltage, Resists_from_fit, Temps_from_fit, Temps_from_fit_n, n, k, Tcs
    """   
    Find initial guess to use in Newton's method
    """   
-   Rterm = Voltage**2/Resists_from_fit
-   Tterm = k*(Temps_from_fit_n - Tcs**n)
-   funcValues = abs(Rterm - Tterm)
+   Rterm = Voltage**2/Resists_from_fit   #  power dissipated in bolo
+   Tterm = k*(Temps_from_fit_n - Tcs**n) # power required to heat bolo to Tbn
+   funcValues = abs(Rterm - Tterm)       # Want this to be zero
    
    Tbmin = np.argmin(funcValues)
    To = Temps_from_fit[Tbmin]
@@ -214,8 +226,10 @@ def FindT(Voltage, Resists_from_fit, Temps_from_fit, Temps_from_fit_n, n, k, Tcs
    satisfy this relation.                             
    """
    def func(Ti, Voltage, Resists_from_fit, Temps_from_fit, k, n, Tcs, dT):
+      # this calculates the function that we're trying to find the zero of,
+      # which means the two sides of the power equation are balanced.
       R1 = FindR(Resists_from_fit, Temps_from_fit, Ti)
-      return (Voltage**2/R1)-k*(Ti**n-Tcs**n)
+      return (Voltage**2/R1)-k*(Ti**n-Tcs**n)  # given that T and R, what is the value of the function?
          
    def funcder(Ti, Voltage, Resists_from_fit, Temps_from_fit, k, n, Tcs, dT):
       R1 = FindR(Resists_from_fit, Temps_from_fit, Ti)
@@ -250,11 +264,10 @@ def CreateIVPlot(max_Voltage, min_Voltage, delta_Voltage, Resists_from_fit, Temp
    Cur = np.array([])
    Temp = np.array([])
    Resist = np.array([])
-   
+
    """
    Step through voltages, find T and R, then find the current.
    """
-   
    Volt = np.arange(min_Voltage, max_Voltage, delta_Voltage)
       
    for i in xrange(len(Volt)): 
@@ -263,17 +276,15 @@ def CreateIVPlot(max_Voltage, min_Voltage, delta_Voltage, Resists_from_fit, Temp
       Temp = np.append(Temp, Ti)
       Ri = FindR(Resists_from_fit, Temps_from_fit, Ti)
       Resist = np.append(Resist, Ri)
-      
    Cur = CalcCurrent(Volt, Resist)
-   
    return Volt, Cur, Temp, Resist
    
 def FindIVMin(Volts, Curs, Tc):
+    # find where the current is the smallest in the IV curve.
+    #  (careful... it's the lowest value, not necessarily where the derivative is zero.)
     minarg = np.argmin(Curs)
     Vmin = Volts[minarg]
     Cmin = Curs[minarg]
-    
-
     return Vmin, Cmin, minarg
     
 def IVCFindR(Voltages, Currents, Volt):
@@ -364,45 +375,48 @@ def GetRP(Voltage, Current):
     return R, P, dRdP
     
 def FindLG1(Voltages, Resistances, Temperatures, n, k, dT):
+    # Given a list of (V_bias, Rbolo, Tbolo) values, find loop gain = P_elec*alpha/(Gdynamic*Tc)
+    # The list (V_bias,Rbolo,Tbolo) presumably comes from analyzing an IV curve along with R(T) curve.
+    #
     dPdT = n*k*(Temperatures**(n-1))
     P = Voltages**2/Resistances
     dRdT = np.array([])
 
     dRdT = FinddRdT(Resistances, Temperatures, dT)
     
-    A = (Temperatures/Resistances)*dRdT
+    A = (Temperatures/Resistances)*dRdT   # alpha
     LoopGains = (A*P)/(dPdT*Temperatures)
-    
     return LoopGains, A
     
 def FindLG2(Resistances, Temperatures, n, k, Tcs, dT):
-    
+    #  Given a list of (Rbolo,Tbolo), find the loop gain.
+    #  This version calculates the electrical power from the thermal link equation
+    #  so this all comes from an R(T) curve, no IV curve information.
+    #
     dRdT = np.array([])
-    
     dRdT = FinddRdT(Resistances, Temperatures, dT)
-    
-    A = (Temperatures/Resistances)*dRdT
-    
+    A = (Temperatures/Resistances)*dRdT   # alpha
     G = n*k*Temperatures**(n-1)
-    
     P = k*(Temperatures**n - Tcs**n)
-    
     LG = (A*P)/(G*Temperatures)
-    
     return LG, A
     
 def FindLG3(Voltages, Resistances, Temperatures, Currents, n, k, dT):
+    #  Similar to FindLG1, but uses P_elec = Ibolo*Vbolo rather than Vbolo**2/R_bolo.
+    #   Scott: I'm not sure how this is different than FindLG1, 
+    #    given that we get R_bolo from I_bolo and Vbolo.
+    #
     G = n*k*Temperatures**(n-1)
     P = Voltages*Currents
-    
     dRdT = FinddRdT(Resistances, Temperatures, dT)   
-    
-    A = (Temperatures/Resistances)*dRdT    
+    A = (Temperatures/Resistances)*dRdT      # alpha
     LoopGains = (A*P)/(G*Temperatures)
-        
     return LoopGains, A
     
 def FindPResistFromIV(Current, Voltage, lower_range, upper_range):
+    # finds the dynamic R for a given range of the IV curve by fitting for the slope of V vs I.
+    #  Most likely use of this is to find the residual resistance (normal) below the transition.
+    #
     if len(Current[lower_range:upper_range]) or len(Voltage[lower_range:upper_range]) < 2:
         PResist = 0
     else:
@@ -412,17 +426,19 @@ def FindPResistFromIV(Current, Voltage, lower_range, upper_range):
     return PResist
     
 def FindLGFromIV(Voltage, Current, lower_range, upper_range):
+    # Find the loop gain only from the IV curve, does not use R(T) curve.
+    #
     PResist = FindPResistFromIV(Current, Voltage, lower_range, upper_range)
     Voltage = Voltage - Current*PResist
     DataR = Voltage/Current
     DataP = Voltage*Current
 
-    #Susceptible to noise!!! Advise only using values from a fited curve!
+    #Susceptible to noise in I and V!!! Advise only using values from a fited curve!
     dR = DataR[1:] - DataR[:-1]
     dP = DataP[1:] - DataP[:-1]
     dRdP = dR/dP
     dRdP = np.append(dRdP, (DataR[-1]-DataR[-2])/(DataP[-1]-DataP[-2]))
-    LG = DataP/DataR * dRdP
+    LG = DataP/DataR * dRdP  # mathematically equivalent to alpha*Pelec/(Gdyn*Tc)
 
     return LG
 
