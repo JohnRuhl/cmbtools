@@ -1,0 +1,28 @@
+Known Issues with SmartGit
+==========================
+All Platforms:
+--------------
+* Some accelerators like Del or Backspace should not be used because they
+  prevent the same shortcuts in text fields:
+  https://bugs.eclipse.org/bugs/show_bug.cgi?id=368767
+
+Linux
+-----
+* SmartGit must be started using bin/smartgithg.sh. To install a menu item
+  or a launcher link use bin/add-menuitem.sh. Don't just try  to pin the 
+  launched SmartGit instance to the Unity launcher, because clicking this
+  will not launch the script and might cause hard crashes, e.g. because of
+  https://bugs.eclipse.org/bugs/show_bug.cgi?id=419729
+
+Mac OS X
+--------
+* When the toolbar is hidden and the full-screen option is toggled, it can
+  become visible again, but remains empty:
+  https://bugs.eclipse.org/bugs/show_bug.cgi?id=392803
+
+Windows
+-------
+* Sometimes accelerators don't work any more after switching the keyboard
+  layout:
+  https://bugs.eclipse.org/bugs/show_bug.cgi?id=415973
+  https://bugs.eclipse.org/bugs/show_bug.cgi?id=405453

@@ -1,0 +1,718 @@
+SmartGit/Hg 6.0.6 (2014-08-27)
+==============================
+New Features, Improvements
+--------------------------
+- SSH: added VM property smartgit.ssh.defaultUser to configure SSH user name
+  to use if not specified in the URL
+- Submodules: added VM property smartgit.core.push.recurseSubmodules=on-demand
+  to push submodules on demand
+
+Fixed Bugs
+----------
+- Add or Create Repository: opens an already open repository in second window
+- Log:
+  - Details: should display information in case parent commits are not yet
+    loaded
+  - Commits: internal error dragging ref over merging node
+  - Log Commit Chooser: internal error invoking a Copy action on a virtual
+    (e.g. merging) node
+- Review:
+  - possible error in case of invalid user email
+  - possible internal error in case of strange characters (like \n) in
+    user name
+  - entering invalid email address may result in error after editing a user
+  - commit message lost after integrating a pull request using "Merge"
+  - Integrate should not fast-forward merge when using option "Merge"
+  - when syncing Review changes without having pushed local pull request
+    branch, corresponding pull request may vanish temporarily in the remote
+    repository
+  - should not update pull request without having a local branch (may result
+    in error "could not resolve commit '<local-branch'" when trying to push)
+  - internal error when trying to edit diverged pull request
+  - internal error when trying to create pull request from remote branch
+  - when modifying a pull request for which its anchor is locally missing, on
+    subsequent Sync, the pull request may be removed in the repository
+- SVN:
+  - unable to clone from SSL-servers which do not support SSLv3
+  - Submodule Reset: does not work on URL-mismatch submodules
+- External tools (Windows): default "Open in Terminal" does not work for
+  some paths
+- Linux Mint 17 Cinnamon: progress dialog does not start until clicked
+- Refresh/others: possible problems with shallow clones
+- Built-in SSH client: log files were created in the temp directory
+- Exit: possible internal error, if writing settings file failed
+- Delete: may still delete submodules/nested roots when invoked on selection
+  which contains normal files
+- Pushable Commits (and others): mirror remotes should not be honored even
+  if the only remote
+
+
+SmartGit/Hg 6.0.5 (2014-07-27)
+==============================
+New Features, Improvements
+--------------------------
+- Branches view: tracked Git-Flow branches also show up for corresponding
+  remotes
+- Conflict Solver: now works also on "deleted-by" conflicts
+- Distributed Review: preserves commit-refs for removed pull requests/comments
+  (can be turned off optionally)
+
+Fixed Bugs
+----------
+- Git:
+  - Blame: internal error related to moved files
+  - Conflict Solver: did not evaluate line separators from .gitattributes
+  - Distributed Review: possible error (multiple merge bases for <commit> and
+    <commit>" when working with multiple remotes
+  - Index Editor: "invalid boolean value" error message on Save if
+    core.safecrlf=warn
+  - Push To: forced-pushing to non-existing remote branch failed
+  - Rebase: Continue complains about modified submodules
+  - Refresh: core.excludesfile specified in .git/config was not used
+- Hg:
+  - Apply Stash: did not apply the last created one shelve (shelves were sorted
+    alphabetically instead of based on creation time)
+  - Blame: possible internal error for files with multiple origins
+  - Git repository's spinning wheel did not spin when refreshing in background
+- SVN:
+  - Clone: possible internal error related to .gitattributes mapping
+- GUI:
+  - possible slowness/hang when too many windows were open
+  - several GUI parts, e.g. Log/Details: click, drag-select and release over a
+    link did trigger the link action
+- Linux:
+  - Refresh after command execution: changes might not be picked up if inotify-
+    limit was reached
+- several internal errors reported by crash reports
+
+
+SmartGit/Hg 6.0.4 (2014-07-08)
+==============================
+New Features, Improvements
+--------------------------
+- Git:
+  - Deleting a remove branch now also disables the tracking of the
+    corresponding local branch
+  - Cherry-pick: added VM option smartgit.cherrypick.xOption - set to true to
+    pass the -x option to the cherry-pick command
+
+Fixed Bugs
+----------
+- Git:
+  - Commit: "Stages files" only shows a subset of all files when committing
+    from a non-root directory
+  - Log, Details: possible internal error when hovering over SHA-link
+  - GitHub:
+    - problems fetching pull request if remote URLs differ in case
+    - Log: Sync did not work
+  - Review:
+    - "Neutral" option showed up as +1 instead of +0
+    - Sync not enabled after initializing database
+    - meta "commit"-refs might not be created properly if sync overlaps with
+      someone else syncing
+  - Pull: possible misleading error message in case on of multiple remotes is
+    down
+- GUI:
+  - Changes views: misleading "binary content" message for large text files
+  - work-around for the SWT bug
+    https://bugs.eclipse.org/bugs/show_bug.cgi?id=438479
+  - Drag and drop: internal error dragging commits from the Log to the Outgoing
+    view
+- various operations: problems with files locked exclusively by other
+  applications
+- file monitor (Windows): possible internal error
+- other sporadic bugs reported by the crash reporting
+
+
+SmartGit/Hg 6.0.3 (2014-06-17)
+==============================
+New Features, Improvements
+--------------------------
+- Push To: is not available for remove branches
+- Windows installer: made directory context menu item "Open in SmartGit/Hg"
+  optional
+
+Fixed Bugs
+----------
+- Git:
+  - Background Fetch: may not be invoked (just polled)
+  - Changes view:
+    - clicking side-buttons sometimes does not work
+    - possible internal error clicking [<<] buttons
+  - Check for Update: did not report new versions
+  - Distributed Review: slow, unresponsive Users dialog in case of many users
+  - GitHub:
+    - Create Pull Request/Comment menu items were gone
+    - possible internal error related to refresh
+    - possible internal error if username/password combination is too long
+  - Log:
+    - File log: possible internal error
+  - Merge: possible internal error closing dialog immediately after opening
+  - OS X: "git-credential-osxkeychain" in bundled Git was not executable; JRE
+    contained broken symlink
+  - Pull with rebase sometimes is rejected
+  - Rebase, Skip: tried to continue instead of skipping the current patch
+  - Refresh:
+    - internal error for relative paths in repositories.xml
+    - failed to update file states after committing to submodule which has
+      been opened as repository
+  - Rename Remote: possible internal error for certain selection states
+- Hg:
+  - Log: graph columns were not wide enough initially
+- SVN:
+  - Clone: possible internal error
+- GUI:
+  - Ctrl+A in a tree must not changes expansion state of nodes
+  - Remove Repository: internal error when having removed the repository
+    already in another window
+  - Resource leaks
+
+
+SmartGit/Hg 6.0.2 (2014-06-06)
+==============================
+New Features, Improvements
+--------------------------
+- Git:
+  - Background Fetch: introduced .gitconfig option
+    "remove.<name>.smartgitBackgroundFetch=false" to exclude remote from
+    background fetching
+
+Fixed Bugs
+----------
+- Git:
+  - Background Refresh: endless spinning wheel for one repository
+  - Commit Message tool window related internal error
+  - Distributed Review:
+    - Add Comment: rendering problems when using @
+    - Integrate Pull Request may not offer Rebase, giving strange reason
+  - Git Flow: possible internal error when trying to finish release
+  - GitHub/Distributed Review markdown:
+    - possible internal error trying to display large comments (parsing error)
+    - incorrect markdown rendering for bold+italic
+  - Log:
+    - File log: possible internal error
+  - Outgoing: paths of submodules always showed up as "."
+  - Refresh:
+    - after commands failed to pick up changes if only .git/HEAD file was
+      affected
+    - was not enabled when an invalid Git executable was configured
+  - Smart Open (double-click): invoked Conflict Solver instead of Resolve for
+    conflicting submodules
+- Hg:
+  - Add: did not allow to add ignored files
+  - Rebase: possible internal error in case of invalid HEAD
+- General
+  - Outgoing: dropping before first commit was not possible any more
+  - Repositories: Remove Repository was enabled if opened  in another window
+    causing internal error
+  - Shutdown: possible internal error
+
+
+SmartGit/Hg 6.0.1 (2014-06-02)
+==============================
+New Features, Improvements
+--------------------------
+- Hg:
+  - Outgoing: show SHA column
+- BitBucket provider: show Owner column
+- prominent confirmation for sending 'crash footprints'
+
+Fixed Bugs
+----------
+- Git:
+  - GitHub:
+    - Drop Pull Request: might result in internal error
+    - external changes to refs/pulls may not be reflected in the Branches view
+    - outgoing pull requests may not show up in the Branches view
+    - possible internal error if username or password contains newline
+      characters
+  - Outgoing: might display outdated data when selecting repository group
+  - Refresh: possible internal error if repository becomes invalid during
+    refresh
+- Hg:
+  - Outgoing:
+    - squashing initial commits results in unversioned working copy
+    - moving initial commit was allowed
+    - possible problems due to outdated commits being still displayed
+- SVN: Commit: possible internal error related to hook-return message
+- SSH: read-timeout was not configured, now it is 1 hour
+- Exit: possible internal error
+- GUI:
+  - possible internal error related to obstructed files
+  - Preferences:
+    - Executables page: trying to show an error when verifying executable
+      resulted in internal error
+    - Generate GitHub Token dialog: possible internal error when closing
+  - Welcome dialog: internal error if repository name or directory path
+    contains \r
+
+
+SmartGit/Hg 6.0.0 (2014-05-28)
+==============================
+Fixed Bugs
+----------
+- Git:
+  - Discard: did not work for submodules
+  - Git-Flow configure: when trying to configure Light mode, error
+    "'' is not valid branch" could be shown
+  - Log: possible internal error dropping ref onto "Merge" node
+  - Refresh: possible internal error
+  - Submodule|Resolve: possible internal error if submodule was invalid
+- SVN: memory leak for various commands
+- GUI:
+  - Bug dialog: Force Exit could cause deadlock
+  - Edit|Customize: "Menu Item" column was not wide enough to fit all items
+  - Missing repository: possible internal error when deleting missing
+    repository
+
+
+SmartGit/Hg 6 rc 3 (2014-05-22)
+===============================
+New Features, Improvements
+--------------------------
+- Background Poll/Fetch: poll/fetch after master password has been entered
+- Exit: try to abort background processes
+- ability to register zipped license file
+
+Fixed Bugs
+----------
+- Git:
+  - Creating a new repository: did not initialize when a repository was already
+    known for the specified directory
+  - Background Poll/Refresh: sometimes stopped working
+  - Branches view: possible internal error
+  - Clone: possible internal error cloning a Git repository at a location where
+    SmartGit expected a Hg repository
+  - Drop Stash: possible internal error
+  - Log:
+    - could not open Log for submodule gitlink and submodule repository at the
+      same time
+    - Details: clicking SHA was broken
+  - Merge: platform encoding was used instead of UTF-8 to read/write
+    .git/MERGE_MSG
+  - Output view: possible internal error when moving commits
+  - various commands: possible internal error caused by invalid config values
+- Compare: possible internal error related to scrolling using wheelmouse
+- Setup: some pages were empty
+- Shutdown: possible internal error
+- Linux/OS X: the title did not show paths in HOME with leading ~/
+- OS X: some controls were cut-off
+- Windows: editable combobox showed initial content often truncated
+
+
+SmartGit/Hg 6 rc 2 (2014-05-15)
+===============================
+New Features, Improvements
+--------------------------
+- Background Fetch: if Fetch is configured, repositories should still
+  be polled every 5 minutes (instead of just every hour)
+- Branches: tooltip for annotated tags should display tagger's name and
+  email in one line, as for author and committer
+- Changes: after staging all changes, view should automatically switch
+  from Index-WorkingTree to HEAD-Index
+- Preferences: option to disable sending of stripped down stacktraces
+- Resolve: in case of rebase, "ours" and "theirs" should be swapped the
+  same way as for the Conflict Solver
+- Starting a new instance should reopen last repository as
+  double-clicking the tray icon does
+
+Fixed Bugs
+----------
+- Refresh: possible "ambiguous argument 'HEAD': both revision and
+  filename" error
+- Add Tag: annotated tags should be written with "UTF-8" encoding
+  instead of ANSI
+- Branches:
+  - possible internal error related to \r in tag messages
+- Remotes|Delete: possible assertion trying to delete remote
+- Git-Flow:
+  - after configuring Git-Flow, it did not offer any Git-Flow command
+    until manually refreshing
+  - possible internal error on Start Feature
+- GitHub:
+  - possible internal error related to initial refresh (from server)
+  - refresh did not work after adding a comment
+- Shutdown: possible internal error
+- Notifications: couldn't be opened when clicking (Ubuntu 12.04)
+- Pull multiple repositories: submodules were not reset as for pulling
+  just a single repository
+- Rebase: interactive Rebase couldn't be continued
+- Refresh:
+  - internal error if repository contains file with \r in its name
+  - possible internal error after repository has been removed/became
+    invalid immediately before
+  - (Windows, Mac): sometimes failed to update file states after
+    invoking a command
+- Refresh/various commands: possible internal error related to invalid
+  ref-names
+- Repositories: Move Into Group should not be available for top-level
+  repositories
+- Review:
+  - Initialize: "Initialize Remote" option should be available even if
+    a remote has smartGitID set in .git/config, but still missing
+    refs/meta/smartgit/review
+  - safer file structure
+- Submodule:
+  - Initialize: internal error if .gitmodules does not contain URL for
+    submodule
+  - Unregister: failed with "Please, stage your changes to .gitmodules
+    or stash them to proceed"
+
+
+SmartGit/Hg 6 rc 1 (2014-05-07)
+===============================
+New Features, Improvements
+--------------------------
+- GitHub integration: option to use either https or ssh repository URLs
+- Review:
+  - option to dispose database
+  - smarter click action for Preview comments
+  - support for multiple approvers
+- Bug dialog: Send Directly button with pre-filled email address
+
+Fixed Bugs
+----------
+- Branch Browser: possible internal error
+- Clone/Fetch/Push: "counting objects" should be output to status bar
+  instead of Output area
+- Edit Comments: resize problems
+- Log/others: possible internal error in combination with annotated tags
+- Review: possible duplication of Pull Request (contents)
+- Shutdown: possible internal errors
+- Tools: didn't work on files selection any more
+- Various possible purely UI-related errors
+
+
+SmartGit/Hg 6 preview 9 (2014-05-02)
+====================================
+New Features, Improvements
+--------------------------
+- Checkout: in case of unversioned files, ask whether to stash them (otherwise
+  switching branches might abort)
+- when creating new repositories, e.g. by using drag and drop, don't append
+  number suffixes by default
+- Refresh: should not (read-only) access files in ignored directories
+
+Fixed Bugs
+----------
+- Compare: internal error when trying to export HTML for binary file diff
+- Conflict Solver: internal error switching layouts
+- possible internal error opening bare repository with invalid HEAD
+- Log: possible internal error (ConcurrentModificationException)
+- File watcher (Linux): internal error
+- GUI:
+  - endless focus cycle between Files table and its filter input field
+
+
+SmartGit/Hg 6 preview 8 (2014-04-29)
+====================================
+New Features, Improvements
+--------------------------
+- Annotate/Blame: when using --blame command line option, ability to pass
+  line number to scroll to: --blame /my/file.txt:123
+- Refresh: optionally refresh when SmartGit is in background
+- Review: pull requests which are updated (due to new commits) are put into
+  "Pending" state again
+- GitHub/Bitbucket: changed fingerprints now can easily accepted
+- reworked default perspectives
+- automatically send stacktraces of internal errors to syntevo.com
+
+Fixed Bugs
+----------
+- Resource leak: not all resources were correctly disposed on exit
+- Log: memory leak
+- Refresh (Linux): did not work for repositories on symlinks
+- Review:
+  - Configure: internal error when trying to initialize remotes and all remotes
+    were already initialized
+  - Sync: error when trying to sync pull request deletion for already deleted
+    branch
+  - possible "Commit xyz was not found in repository" error message
+  - refs/meta/smartgit/commit-refs might become lost
+- Copy Path and others wer broken for file selections
+- OS X: "git-credential-osxkeychain dies of signal 11"
+- Notifications in multiple windows were shown with wrong z-order
+- GitHub icon: was not recognizable with dark themes
+
+
+SmartGit/Hg 6 preview 7 (2014-04-18)
+====================================
+New Features, Improvements
+--------------------------
+- Background tasks:
+  - should give more precedence to foreground tasks
+  - should not run concurrently
+- Clone: can be cancelled
+- Compare: currentline-highlight is optional
+- External Diff Tools: temporary files should be set to read-only
+- Log:
+  - works on bare repositories
+  - Comments: background color is configurable
+- System property "smartgit.repositories.removeMissing" to get rid of
+  missing repositories on startup
+
+Fixed Bugs
+----------
+- Blame: possible internal error when hovering over info-gutter
+- Branches view (OS X): Octocat did not show up until tool windows was
+  resized
+- File System Monitoring (Mac OS): may fail if path to repository
+  contains uppercase characters
+- GitHub: possible internal error related to updating Branches view
+- .gitmodules: partial support for "ignore=all"
+- Linux: tiny popups (e.g. "no more changes" in the Changes view)
+  were only visible a very short time (< 1s)
+- Log:
+  - Files table should always be empty in case of 3 or more commits
+    selected
+  - Cent OS: by default, the table columns were too narrow
+- Preferences: possible internal error after toggling GitHub integration
+- Push: if repository has no remote, Remote|Add-dialog occurred on top
+  of error dialog, hiding it
+- Refresh (after commands): sometimes not invoked if file monitor is
+  disabled (or could not be loaded)
+- Repositories view: too many operations were enabled for mixed
+  selection of open and closed repositories
+- Reviews: Reply should not contain original comment text
+- Sync: did not update the repository state correctly
+- Various commands: internal error when command output contains \r
+- Windows: logging out or shutting down did not invoke shutdown hooks,
+  like cleaning up temp-directories
+
+
+SmartGit/Hg 6 preview 6 (2014-04-07)
+====================================
+New Features, Improvements
+--------------------------
+- Log:
+  - Reveal Commit:
+    - make select (only) the commit; the new Compare with Selected Commit
+      adds to the existing (single-commit) selection
+    - focusses Commits view
+  - Add Commit Comment is now  present in the main menu
+- Merge: uses short ref name where possible to produce easier readable
+  default commit messages without leading "refs/remotes/" branch prefix
+- Review:
+  - Pull requests create merge commit for easier review
+  - Sync gives a little bit command output
+  - inline comments show no ID any more
+- Git-Flow operations properly update submodules
+- Outgoing view: will remember visible columns
+- Compare: optionally inner-line changes in whitespaces will show whitespace
+  symbols
+- Changes view: navigating using mousewheel and prev/next toolbar buttons now
+  puts the focus into the side of the larger block to make it better readable
+- SmartGit SSH client: ability to limit max. connection count per period
+- Repository search: more advanced name algorithm trying to avoid name
+  duplication using parent directory names
+- Project import: doesn't use number suffixes for directory names
+- Repository search, project import: recently used list is sorted by
+  .git/HEAD time
+- Windows installer: directory context menu item to "Open in SmartGit"
+
+Fixed Bugs
+----------
+- Background fetch: possible internal error
+- Command line option "--open <path>" caused two windows to be opened
+- Log:
+  - toggling display of meta-refs in the preferences did not work until
+    reopening the Log
+  - internal error right-clicking empty area in Comments view
+- Refresh: possible internal error
+- Review:
+  - push failed due to diverged refs/meta commit
+  - replying to comment of another user was not possible
+  - possible internal error "Could not resolve commit 'refes/...'" on Rebase
+- Linux:
+  - Log, Reveal Commit: highlight showed up at wrong line
+  - Repository|Close exited SmartGit
+- Linux, OS X: cloning suggested paths like /home/<repository-name> or
+  /Users/<repository-name>
+- OS X:
+  - Accelerator configuration dialog and tooltips showed + between modifiers
+  - Info.plist did not contain LSApplicationCategoryType entry
+- Speed-search: possible NPE pressing Ctrl-V
+
+
+SmartGit/Hg 6 preview 5 (2014-03-25)
+====================================
+New Features, Improvements
+--------------------------
+- Git-Flow: lightweight model supporting only feature branches
+- Git:
+  - preferences option to push all tags
+- Review:
+  - integration into main window
+  - support for different pull-request states, e.g. pending/approved/rejected
+  - Pull Requests category shows "my" pull request count
+  - Assignee input field supports user alias completion
+  - double-clicking a comment jumps to comment
+- GUI:
+  - Windows: taskbar item is highlighted if a dialog is shown while SmartGit is
+    in background
+- smartgit.properties: moved property descriptions to online help
+
+Fixed Bugs
+----------
+- import of old projects: multiple repositories with same root were imported
+- Git:
+  - Background Refresh/Fetch:
+    - possible internal error if bare repository has been opened
+    - master password was still requested
+  - GitHub:
+    - Add Comment dialog was broken
+    - Drop Local Data did not work after pull request had been deleted
+  - Log:
+    - possible internal error related to commit messages containing "\r\n"
+    - Reveal Commit: might select multiple refs in same category
+  - Pull: was not visible in context menu of closed repositories
+  - Review:
+    - delay/hang when expanding Pull Request category
+    - comment commits without ref could be garbage collected
+    - pull requests still showed up as "local" after pushing to remote
+- GUI:
+  - repaint problems with table columns truncated in the middle
+  - possible internal error when Repositories selection changed while the
+    tree control was updated
+- OS X 10.9: color chooser buttons in preferences had mis-aligned icon
+
+
+SmartGit/Hg 6 preview 4 (2014-03-13)
+====================================
+New Features, Improvements
+--------------------------
+- Git:
+  - Background check for remote changes: now works for any open Git
+    repository, not just those marked as favorite
+
+Fixed Bugs
+----------
+- the portable bundle also tried copying settings from previously installed
+  versions
+- Compare: the current line background color was not unset when unfocused
+- File table name column: icons were vertically misaligned
+- Git:
+  - Background fetch: asked for master password
+  - Background refresh/fetch:
+    - notification flickered
+    - Hg repositories were tried to access as Git repository
+  - Commit message dialog: flickered while typing
+  - Log: did not refresh after refs/-changes, e.g. after Push
+  - Outgoing: did not update correctly when changing selected repository
+
+
+SmartGit/Hg 6 preview 3 (2014-03-07)
+====================================
+New Features, Improvements
+--------------------------
+- Git:
+  - Incoming commits are detected without the need for a potential slow fetch
+    ('git ls-remote'), especially for open repositories
+  - Background fetch:
+    - automatically fetch remote changes when idle
+    - options to disable, detect, fetch
+  - Conflict Solver: left and right panes are swapped for Rebase
+- External directory tools now also can be invoked on closed repositories
+- too narrow file table columns truncate the name now in the middle, e.g.
+  filen...e.txt
+
+Fixed Bugs
+----------
+- Git:
+  - Log, Details:
+    - copying SHA was not possible for GitHub-enabled repositories
+    - misleading confirmation dialog when dragging a tag
+  - Git-Flow: internal error trying to invoke Finish Feature
+- Output: was disabled when no repository has been opened but commands like
+  fetch could be invoked
+
+
+SmartGit/Hg 6 preview 2 (2014-03-05)
+====================================
+New Features, Improvements
+--------------------------
+- Repositories:
+  - closed repositories: no repository path is shown by default
+  - Mark as Favorite: hides now explaining notification
+- Branches:
+  - configurable symbol for pull requests
+- Setup wizard: executable page only is shown in case none has been found
+
+Fixed Bugs
+----------
+- Branches:
+  - did not indicate pull requests without explicit refresh
+- Outgoing:
+  - remained empty after opening a project despite of outgoing commits
+- Repositories:
+  - internal error invoking Close on empty group
+  - internal error closing a window while background-refreshing
+
+
+SmartGit/Hg 6 preview 1 (2014-03-04)
+====================================
+New Features, Improvements
+--------------------------
+- completely reworked repository management:
+  - no more "projects", only named repositories
+  - repositories can be organized in groups (one level)
+  - all repositories and groups are sorted by name, groups before repositories
+  - "favorite" projects are sorted on before groups
+  - drag-and-drop to move repositories to other or out of groups
+  - drag-and-drop to add repositories
+  - open repositories will be reopened automatically on restart
+  - Welcome dialog maintains recently used repositories list (including all
+    favorite repositories)
+  - repositories indicate local changes, incoming and outgoing changes
+- Git:
+  - Pull/Fetch:
+    - works on closed repositories, too
+    - ability to pull from all remotes
+  - Log works on closed repositories, too
+  - background Refresh/Fetch for favorite repositories
+  - distributed Code Review feature (no need for GitHub, paid add-on):
+    - Pull request support
+    - ability to comment branches
+    - ability to comment lines in text files
+  - Markdown support for GitHub support and Code Review feature
+  - Branches:
+    - deleting a tracking branch suggests to delete tracked branch, too
+    - denotes GitHub pull requests
+  - Outgoing view:
+    - interactive rebase support for auto-stash/auto-apply
+  - Log:
+    - Details view improved
+    - Branches|Reveal: does not selects, just reveals commit
+    - improved drag and drop autoscroll speed
+    - Changes: shows line number in status bar
+  - Refresh: ignored, versioned directories are scanned (so contained ignored
+    files can be shown)
+  - Reset: warning if local or staged changes would be overwritten
+  - Submodules are shown in files table (SHA ID is shown in Changes view)
+  - Edit|Copy menu items work on multiple selected files, directories or
+    repositories
+  - Merge: uses Git's commit messages by default; to get the "old" shorter,
+    easier readable messages, add following line to smartgit.properties
+       smartgit.core.merge.shortCommitMessage = true
+  - Switch has been renamed to Checkout
+- Compare:
+  - separate coloring and view option for trailing whitespace
+  - highlighting for current line
+- stream-lined setup wizard, e.g. it searches for repositories
+- Windows: better looking disabled toolbar buttons
+- launching a browser (e.g. by clicking a link) keeps GUI responsive
+
+Fixed Bugs
+----------
+- Git:
+  - Log:
+    - GitHub comments were visible though disabled in the preferences
+  - Clone or Rebase might fails if special refs were involved
+  - Push: possible internal error clicking the Push toolbar button very quickly
+  - custom HOME environment variable is not overwritten when launching the Git
+    executable
+- file/directory input fields: sorting was unexpected, e.g. "foo-5/" before
+  "foo"
+- OS X:
+  - smartgit:// URL was broken
+  - launching the Terminal ignored environment variable changes
