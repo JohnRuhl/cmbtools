@@ -53,26 +53,26 @@ def optical_calcs(data, datasrc):
     eta_tot = 1.0
     for i in range(len(datasrc)):
         x = h*data['nu']/(k*datasrc[i]['T'])
-    #occupation number; this is eps*eta_tot*band/(e^x -1).
-    # band*tau is freq-dependent, and n the case of tau element-dependent, optical efficiency
-    n = datasrc[i]['eps']*eta_tot*data['band']\
-    /numpy.longdouble((numpy.exp(x)-float(1)))
-    #power per mode per Hz
-    P = h*data['nu']*n
-    #total power integrated across band
-    datasrc[i]['Q'] = numpy.trapz(P, data['nu'])
-    datasrc[i]['T_RJ'] = datasrc[i]['Q']/data['dPdT_RJ']
-    #phonon noise integral
-    integrand = 2*((h**2)*(data['nu']**2))*(data['Nmodes']*data['Npol'])*(n+n**2)
-    #print n, n**2, map(add,n,n**2)
-    NEP2_photon = numpy.trapz(integrand, data['nu'])
-    datasrc[i]['NEP_photon'] = numpy.sqrt(NEP2_photon)
-    datasrc[i]['NET_photon_cmb'] = datasrc[i]['NEP_photon'] / data['dPdT_cmb']
-    datasrc[i]['NET_photon_RJ'] = datasrc[i]['NEP_photon'] / data['dPdT_RJ']
-    datasrc[i]['eta_to_bolo'] = eta_tot
-    # update eta_tot for the next loop through here
-    # eta_tot is the optical effiency between the relevant element and the bolo.
-    eta_tot = eta_tot*datasrc[i]['tau']
+        #occupation number; this is eps*eta_tot*band/(e^x -1).
+        # band*tau is freq-dependent, and n the case of tau element-dependent, optical efficiency
+        n = datasrc[i]['eps']*eta_tot*data['band']\
+        /numpy.longdouble((numpy.exp(x)-float(1)))
+        #power per mode per Hz
+        P = h*data['nu']*n
+        #total power integrated across band
+        datasrc[i]['Q'] = numpy.trapz(P, data['nu'])
+        datasrc[i]['T_RJ'] = datasrc[i]['Q']/data['dPdT_RJ']
+        #phonon noise integral
+        integrand = 2*((h**2)*(data['nu']**2))*(data['Nmodes']*data['Npol'])*(n+n**2)
+        #print n, n**2, map(add,n,n**2)
+        NEP2_photon = numpy.trapz(integrand, data['nu'])
+        datasrc[i]['NEP_photon'] = numpy.sqrt(NEP2_photon)
+        datasrc[i]['NET_photon_cmb'] = datasrc[i]['NEP_photon'] / data['dPdT_cmb']
+        datasrc[i]['NET_photon_RJ'] = datasrc[i]['NEP_photon'] / data['dPdT_RJ']
+        datasrc[i]['eta_to_bolo'] = eta_tot
+        # update eta_tot for the next loop through here
+        # eta_tot is the optical effiency between the relevant element and the bolo.
+        eta_tot = eta_tot*datasrc[i]['tau']
     #sum to get total
     data['Qtot'] = data['Qtot'] + datasrc[i]['Q']
     NEP2_photon_total = add(NEP2_photon_total, NEP2_photon)

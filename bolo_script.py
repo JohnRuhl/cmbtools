@@ -46,15 +46,15 @@ print ' Q',
 print ' T_RJ',
 print ' NEP_photon NET_photon_RJ NET_photon_cmb'
 for i in range(len(datasrc)):
-print "%20s" %datasrc[i]['name'],
-print "%7.3f" %datasrc[i]['eps'],
-print "%7.1f" %datasrc[i]['T'],
-print "%7.3f" %datasrc[i]['eta_to_bolo'],
-print "%10.3e" %datasrc[i]['Q'],
-print "%7.1f" %datasrc[i]['T_RJ'],
-print "%10.3e" %datasrc[i]['NEP_photon'],
-print "%12.3e" %datasrc[i]['NET_photon_RJ'],
-print "%12.3e" %datasrc[i]['NET_photon_cmb']
+    print "%20s" %datasrc[i]['name'],
+    print "%7.3f" %datasrc[i]['eps'],
+    print "%7.1f" %datasrc[i]['T'],
+    print "%7.3f" %datasrc[i]['eta_to_bolo'],
+    print "%10.3e" %datasrc[i]['Q'],
+    print "%7.1f" %datasrc[i]['T_RJ'],
+    print "%10.3e" %datasrc[i]['NEP_photon'],
+    print "%12.3e" %datasrc[i]['NET_photon_RJ'],
+    print "%12.3e" %datasrc[i]['NET_photon_cmb']
 NEP_total = numpy.sqrt(data['NEP_photon_total']**2 + data['Phonon']['NEP']**2 + data['Johnson']['NEP']**2 + data['Readout']['NEP']**2)
 NET_cmb_total = NEP_total/data['dPdT_cmb']/numpy.sqrt(2) # uKrtsec rather than uK/rtHz
 # print out the totals
