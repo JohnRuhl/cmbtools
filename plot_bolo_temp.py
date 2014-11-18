@@ -7,22 +7,22 @@ Created on Fri Nov 14 10:51:20 2014
 
 def plot_temp(band, band_width, eta):
     import pylab as plot
-    import numpy, scipy
+    import numpy, scipy, bolo_module
     global c, h, k, T_cmb, numpy
     c = float(299792456)
     h = 6.626068e-34
     k = 1.3806503e-23
-    T_cmb = 2.725 
+    T_cmb = 2.725
     data = {'nuGHZ':numpy.arange(band - 0.5*band_width, band + 0.5*band_width,0.1, dtype = float)}
     data['T_bolos'] = numpy.arange(0.4,0.6,0.001)
-    data['T_base'] = 0.28    
+    data['T_base'] = 0.28
     data['nu'] = data['nuGHZ']*float(1e9)
     data['band'] = numpy.ones(len(data['nu']),float)
     data['Npol'] = 1.0
     data['Nmodes'] = 1.0
     data['eta'] = 0.088
     data['tau'] = .018/eta
-    data['L'] = 0.6 
+    data['L'] = 0.6
     datasrc1 = {'name':'CMB', 'eps':1, 'T':2.725, 'tau':data['tau']}
     datasrc2 = {'name':'atm', 'eps':1, 'T':230.0, 'tau':data['tau']}
     data['n'] = 3.0
@@ -41,17 +41,17 @@ def plot_temp(band, band_width, eta):
     data['NET_rj_phonon'] = empty
     data['NET_rj_Johnson'] = empty
     data['NET_rj_readout'] = empty
-    optical_calcs(data, datasrc)
+    bolo_module.optical_calcs(data, datasrc)
     data['W'] = 2*data['Qtot']
     for i in range(len(data['T_bolos'])):
-        data['T_bolo'] = data['T_bolos'][i]       
-        bolo_calcs(data)
-        data['NET_cmb_phonon'][i] = data['Phonon']['NET_CMB'] 
-        data['NET_cmb_Johnson'][i] = sum(data['Johnson']['NET_CMB'])/len(data['Johnson']['NET_CMB'])
-        data['NET_cmb_readout'][i] = sum(data['Readout']['NET_CMB'])/len(data['Readout']['NET_CMB'])
-        data['NET_rj_phonon'][i] = data['Phonon']['NET_RJ']
-        data['NET_rj_Johnson'][i] = sum(data['Johnson']['NET_RJ'])
-        data['NET_rj_readout'][i] = sum(data['Readout']['NET_RJ'])
+        data['T_bolo'] = data['T_bolos'][i]
+    bolo_calcs(data)
+    data['NET_cmb_phonon'][i] = data['Phonon']['NET_CMB']
+    data['NET_cmb_Johnson'][i] = sum(data['Johnson']['NET_CMB'])/len(data['Johnson']['NET_CMB'])
+    data['NET_cmb_readout'][i] = sum(data['Readout']['NET_CMB'])/len(data['Readout']['NET_CMB'])
+    data['NET_rj_phonon'][i] = data['Phonon']['NET_RJ']
+    data['NET_rj_Johnson'][i] = sum(data['Johnson']['NET_RJ'])
+    data['NET_rj_readout'][i] = sum(data['Readout']['NET_RJ'])
     plot.gca().set_color_cycle(['red', 'green', 'blue'])
     plot.plot(data['T_bolos'], data['NET_cmb_phonon'])
     print data['NET_cmb_phonon']
@@ -61,7 +61,6 @@ def plot_temp(band, band_width, eta):
     print data['NET_cmb_readout']
     plot.xlabel('Bolo temperature in K')
     plot.ylabel('NET in uK/sqrt(Hz)')
-    plot.title('NET vs. T_bolo over band '+str(band)+' GHz')    
+    plot.title('NET vs. T_bolo over band '+str(band)+' GHz')
     plot.show()
     #print data['NET_photon_totals']
-
