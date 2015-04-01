@@ -2,10 +2,6 @@
 # Line of Best Fit (using Least Squares Regression):
 
 import numpy as np
-import scipy as sp
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-
 
 '''
     A function that takes in two lists of equal length corresponding
@@ -22,7 +18,7 @@ def linearFit(xList, yList):
     # error if xlist and ylist are different lengths
     if Nx != Ny:
         print "Error: incompatible lists"
-        raise Exception("Incompatible List length")
+        raise Exception("Incompatible List Lengths")
     
     #the degree =1 of the polynomial equation 
     ''' 
