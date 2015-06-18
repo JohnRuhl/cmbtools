@@ -72,7 +72,8 @@ def optical_calcs(data, datasrc):
         datasrc[i]['eta_to_bolo'] = eta_tot
         # update eta_tot for the next loop through here
         # eta_tot is the optical effiency between the relevant element and the bolo.
-        eta_tot = eta_tot*datasrc[i]['tau']
+        eta_tot = eta_tot*(1-datasrc[i]['eps'])
+        print eta_tot
         #sum to get total
         data['Qtot'] = data['Qtot'] + datasrc[i]['Q']
         NEP2_photon_total = add(NEP2_photon_total, NEP2_photon)
