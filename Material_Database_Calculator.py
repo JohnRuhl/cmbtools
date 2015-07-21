@@ -19,20 +19,22 @@ Steps:
  2. Select the correct model with .thermCond['modelname]
     make sure it has a .function
  2. call heat_load() with inputs: material, modelname, minT, maxT.
- 3. print answer
 '''
 
-heat_load(materials['Aluminum']['1100'], 'NIST', [4, 77], area=5e-3, dA=5e-5, length=0.05, dL=0.0005)
-heat_load(materials['G-10'], 'Normal Direction', [4, 77], area=5e-3, dA=5e-5, length=0.05, dL=0.0005)
-heat_load(materials['Teflon'], 'NIST', [4, 77], area=5e-3, dA=5e-5, length=0.05, dL=0.0005)
-heat_load(materials['Carbon Fiber'], 'fit', [4, 77], area=5e-3, dA=5e-5, length=0.05, dL=0.0005)
+# Black
+heat_load(materials['Saved Objects']['Johanna Dewar']['Vespel Legs']['Black'], 'fit', bounds=[0.25, 0.45], area=4.84444268598568e-6, dA=1.99491133502962e-8, length=21.1e-3, dL=0.1e-3)
+
+# brown
+heat_load(materials['Saved Objects']['Johanna Dewar']['Vespel Legs']['Brown'], 'fit', bounds=[0.45, 6.5], area=4.82449357263538e-6, dA=3.98982267005898e-9, length=20.2e-3, dL=0.1e-3)
+
+
 
 # ------------------------------------------
 # Example section for referencing this code
 
 # Examples:
-# test = Mat_Class('test', {'matProp': 'thermCond', 'name': 'test', 'eq': lambda x: 3*(x**2), 'eqr': [0, 10e4], 'd_eq': lambda x: 0.1*x}, fullname='test material')
-# heat_load(test, 'test', [0, 100], A=5e-3, dA=5e-5, L=1e-4, dL=5e-6)
+# test = Mat_Class('test', {'matProp': 'thermCond', 'name': 'testfit', 'eq': lambda x: 3*(x**2), 'eqr': [0, 10e4], 'd_eq': lambda x: 0.1*x}, fullname='test material')
+# heat_load(test, 'testfit', [0, 100], A=5e-3, dA=5e-5, L=1e-4, dL=5e-6)
 
 '''
 Things to Do:

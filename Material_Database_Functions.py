@@ -8,7 +8,7 @@ from scipy.interpolate import UnivariateSpline
 
 
 class Mat_Class(object):
-    ''' Creates a new material for thermal conduction calculations
+    ''' Creates a new material for calculations
         must give a name
         can give a material property (ex thermCond), area, length, UNS, fullname, and info
         - all model properties such as thermCond must be args
@@ -66,7 +66,7 @@ class Mat_Class(object):
         if 'fullname' in kwargs:                     # full name
             self.fullname = kwargs.get('fullname')
         if 'info' in kwargs:                         # info is any note. should be str
-            self.info = kwargs.get('datarange')
+            self.info = kwargs.get('info')
         else:
             self.info = None
 
@@ -452,9 +452,16 @@ def make_dict(*args, **kwargs):
 def is_number(s):
     try:
         float(s)
-        return True
     except ValueError:
         return False
+    else:
+        return True
+
+
+def rounder(data, numDec=5):
+    for number in data[0:-2]:
+        print '{0:0.5f},'.format(round(number, numDec)),
+    print '{0:0.5f}'.format(round(data[-1], numDec))
 
 
 ####################################################################################
@@ -523,7 +530,7 @@ def heat_load(*args, **kwargs):
         d_length = material.length_error
 
     if material is None or modelname is None or bounds is None:
-        print 'Error: material, modelname, &/or bounds can"t be None'
+        print "Error: material, modelname, &/or bounds can't be None"
         return
 
     print '\nHeat Load for {0}:'.format(material.fullname)
@@ -534,11 +541,11 @@ def heat_load(*args, **kwargs):
 
     d_thermCond = thermCond_error(model, bounds, integral, abserror, area, d_area, length, d_length)
 
-    print 'average thermCond over {0}:{1} : {2}'.format(bounds[0], bounds[1], integral/(bounds[1]-bounds[0]))
+    print 'average thermCond over {0}:{1} : {2} [W/(m*K)]'.format(bounds[0], bounds[1], integral/(bounds[1]-bounds[0]))
     if d_thermCond[0] == d_thermCond[1]:
-        print 'Heat Load: {0} +/- {1}\n'.format(thermCond, d_thermCond[0])
+        print 'Heat Load: {0} +/- {1}  [W]\n'.format(thermCond, d_thermCond[0])
     else:
-        print 'Heat Load: {0} +{1}/-{2}\n'.format(thermCond, d_thermCond[0], d_thermCond[1])
+        print 'Heat Load: {0} +{1}/-{2}  [W]\n'.format(thermCond, d_thermCond[0], d_thermCond[1])
     return thermCond
 
 
@@ -552,12 +559,12 @@ def thermCond_integral(model, bounds):
             print 'Warning: no preset equation range'
         if bounds[1] > model.eqrange[1] or bounds[0] < model.eqrange[0]:
             if bounds[1] > model.eqrange[1]:
-                print 'Warning: upper bound too large.\n       user input was:    {0}\
-                       \n       max is:            {1}'.format(bounds[1], model.eqrange[1])
+                print 'Warning: upper bound too large.\n       user input was:    {0} [K]\
+                       \n       max is:            {1} [K]'.format(bounds[1], model.eqrange[1])
             if bounds[0] < model.eqrange[0]:
-                print 'Warning: lower bound too small.\n       user input was: {0}\
-                       \n       min is:         {1}'.format(bounds[0], model.eqrange[0])
-            print '... Calculating anyway\n'
+                print 'Warning: lower bound too small.\n       user input was: {0} [K]\
+                       \n       min is:         {1} [K]'.format(bounds[0], model.eqrange[0])
+            print '    Calculating anyway...'
     except:
         print 'warning: no eqrange'
     if model.eqinput is None:
@@ -585,7 +592,7 @@ def thermCond_error(model, bounds, integral, abserror, area, d_area, length, d_l
         eqerror = model.eqerror[:]
     except:                          # eqerror not a list
         if model.eqerror is None:
-            print 'Warning: no eqerror. Assuming 0'
+            print 'Warning: no eqerror. Assuming error is 0%'
             eqerror = [0]
         else:
             eqerror = [model.eqerror]
