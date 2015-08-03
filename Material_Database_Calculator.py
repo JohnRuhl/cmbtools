@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # A Thermal Conduction Calculator
 
-from Material_Database_Data import *
+from Material_Database_Data import materials
+from Material_Database_Functions import *
 # import Thermal_Conduction_Calculator_functions as fn  # (already imported in _data)
 
 '''
@@ -21,12 +22,8 @@ Steps:
  2. call heat_load() with inputs: material, modelname, minT, maxT.
 '''
 
-# Black
-heat_load(materials['Saved Objects']['Johanna Dewar']['Vespel Legs']['Black'], 'fit', bounds=[0.25, 0.45], area=4.84444268598568e-6, dA=1.99491133502962e-8, length=21.1e-3, dL=0.1e-3)
-
-# brown
-heat_load(materials['Saved Objects']['Johanna Dewar']['Vespel Legs']['Brown'], 'fit', bounds=[0.45, 6.5], area=4.82449357263538e-6, dA=3.98982267005898e-9, length=20.2e-3, dL=0.1e-3)
-
+# 100 Quad-Twist
+heat_load(materials['Saved Objects']['General Materials']['Quad-Twist']['36 AWG'], 'fit', bounds=[4, 300], length=0.55, dL=0.1*0.55)
 
 
 # ------------------------------------------

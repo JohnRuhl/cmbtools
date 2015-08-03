@@ -113,16 +113,35 @@ vespelSP22 = Mat_Class('SP-22', {'matProp': 'thermCond', 'name': 'fit', 'eq': th
 vespel_dict = make_dict(vespelSP1, vespelSP22, name='Vespel')
 
 
+
 #------------------------------------ Objects ------------------------------------
+# General Materials
+# -------------------
+general_materials_dict = make_dict(name='General Materials')
+
+# Quad-Twist Wires
+QuadTwist36 = Mat_Class('36 AWG', {'matProp': 'thermCond', 'name': 'fit', 'eq': phosphor_bronze.thermCond['fit'].eq, 'eqinput': phosphor_bronze.thermCond['fit'].eqinput, 'eqr': phosphor_bronze.thermCond['fit'].eqrange, 'd_eq': phosphor_bronze.thermCond['fit'].eqerror}, area=0.0000000506707479097498, d_area=1.25663706e-11, fullname='36 Guage Quad-Twist Wire', info='Add ~10%  to the length since it is twisted')
+QuadTwist32 = Mat_Class('32 AWG')
+# Quad-Twist Wires Dictionary
+QuadTwist_dict = make_dict(QuadTwist32, QuadTwist36, name='Quad-Twist')
+
+# General Materials Dictionary
+general_materials_dict = make_dict(QuadTwist_dict, dict=general_materials_dict)
+
+
+
 # Johanna Dewar
 # -------------------
+Johanna_Dewar_dict = make_dict(name='Johanna Dewar')
+
 # Vespel Legs Data
 VespelLegsJD_Black = Mat_Class('Black', {'matProp': 'thermCond', 'name': 'fit', 'eq': vespelSP22.thermCond['fit'].eq, 'eqinput': vespelSP22.thermCond['fit'].eqinput, 'eqr': vespelSP22.thermCond['fit'].eqrange, 'd_eq': vespelSP22.thermCond['fit'].eqerror}, area=4.84444268598568e-6, d_area=1.99491133502962e-8, length=21.1e-3, d_length=0.1e-3, fullname='Black Vespel Leg', info="runs from 0.25K to 0.45K. In Johanna's Dewar")
 VespelLegsJD_Brown = Mat_Class('Brown', {'matProp': 'thermCond', 'name': 'fit', 'eq': vespelSP1.thermCond['fit'].eq, 'eqinput': vespelSP1.thermCond['fit'].eqinput, 'eqr': vespelSP1.thermCond['fit'].eqrange, 'd_eq': vespelSP1.thermCond['fit'].eqerror}, area=4.82449357263538e-6, d_are=3.98982267005898e-9, length=20.2e-3, d_length=0.1e-3, fullname='Brown Vespel Leg', info="runs from 0.45K to 4K. In Johanna's Dewar")
 # Vespel Legs Dictionary
 vespel_legs_dict = make_dict(VespelLegsJD_Black, VespelLegsJD_Brown, name='Vespel Legs')
-# Johanna Dewar Dictioanry
-Johanna_Dewar_dict = make_dict(vespel_legs_dict, name='Johanna Dewar')
+
+# Johanna Dewar Dictionary
+Johanna_Dewar_dict = make_dict(vespel_legs_dict, dict=Johanna_Dewar_dict)
 
 
 
@@ -137,7 +156,7 @@ raw_materials = make_dict(alumina, BeO, beryllium_copper, brass, carbonfiber, G1
 raw_materials = make_dict(aluminum_dict, balsa_dict, beechwood_dict, copper_dict, steel_dict, vespel_dict, dict=raw_materials)
 
 # Object Dictionary
-object_materials = make_dict(Johanna_Dewar_dict, name='Saved Objects')
+object_materials = make_dict(general_materials_dict, Johanna_Dewar_dict, name='Saved Objects')
 
 # Master Dictionary
 materials = make_dict(raw_materials, object_materials, name='Materials Dictionary')

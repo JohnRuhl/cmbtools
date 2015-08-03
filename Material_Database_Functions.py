@@ -534,6 +534,7 @@ def heat_load(*args, **kwargs):
         return
 
     print '\nHeat Load for {0}:'.format(material.fullname)
+    print material.info
 
     model = material.thermCond[modelname]
     integral, abserror = thermCond_integral(model, bounds)
