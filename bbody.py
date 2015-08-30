@@ -84,3 +84,39 @@ def dBnudTrj(nu,T):
 
     return dBdT
 
+#-------------------------------------------------
+
+def BBintegrate_1mode(nulow,nuhi,T):
+    '''
+    Integrate Bnu from nuhi to nulow, return total, for a single mode single polarization detector.
+    '''
+    c= 2.99792458e8
+    dnu = (nuhi-nulow)/1000.
+    nuvec = numpy.arange(nulow,nuhi,dnu)
+
+    lambdavec = c/nuvec
+    AOmegavec = lambdavec**2   # single mode
+    integrand = AOmegavec*Bnu(nuvec,T)
+
+    power = numpy.trapz(integrand,nuvec)
+
+    return power 
+#-------------------------------------------------
+
+def BBintegrate_surface(nulow,nuhi,T,AOmega):
+        '''
+        Integrate Bnu from nuhi to nulow, return total, for a single mode single polarization detector.
+        '''
+        c= 2.99792458e8
+        dnu = (nuhi-nulow)/1000.
+        nuvec = numpy.arange(nulow,nuhi,dnu)
+
+        lambdavec = c/nuvec
+        integrand = AOmega*Bnu(nuvec,T)
+
+        power = numpy.trapz(integrand,nuvec)
+
+        return power
+#-------------------------------------------------
+
+
