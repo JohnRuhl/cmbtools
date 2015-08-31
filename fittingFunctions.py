@@ -156,17 +156,28 @@ class ChiSqOpt():
         # finding the model
         model = 0
         for i in range(self.numargs):
+            print i,
             group = getattr(self, 'arg{}'.format(i))  # first BMode, then Dust
-            if isinstance(group, tuple):  # if it's a tuple, then need to select the right 
+            if isinstance(group, tuple):  # if it's a tuple, then need to select the right index
                 temp = group[index]
             else:
                 temp = group
             model += temp.equation(temp.eqinput, args[i])  # evaluating the equation
 
         # finding the residual
-        residual = self.measured_log[index][-1] - model              # *** why calling the last one? ***
+        if isinstance(self.measured_log, tuple):
+            residual = self.measured_log[index][-1] - model              # *** why calling the last one? ***
+        else:
+            residual = self.measured_log[-1] - model
         return residual
         '''have two residuals, 1 from 90 and 1 from 150'''
+
+    def error(self, index):
+        if isinstance(self.measured, tuple):
+            d_data = self.measured[index].d_data
+        else:
+            d_data = self.measured.d_data
+        return d_data
 
     def chisqfc(self, parameters):
         # preparing inputs
@@ -174,13 +185,12 @@ class ChiSqOpt():
 
         chisq = 0
         for index in range(self.numreps):
+            print '\n', index
             # finding the residual
             residual = self.residual(index, params_BM, params_d)
+            # finding the error
+            d_data = self.error(index)
             # finding the chi-squared
-            if isinstance(self.measured, tuple):
-                d_data = self.measured[index].d_data
-            else:
-                d_data = self.measured.d_data
             chisq += np.sum((residual/d_data)**2)  # *** reference right d_data in measured tuple ***
 
         return chisq
@@ -191,9 +201,9 @@ class ChiSqOpt():
         '''
         # selection of optimizaiton method
         method, options = self.optimization_options(kw)
-        bounds = ((0, None), (0, None), (0, None), (0, 1e3))
+        # bounds = ((0, None), (0, None), (0, None), (0, 1e3))
 
-        result = opt.minimize(self.chisqfc, self.params, method=method, bounds=bounds, options=options)
+        result = opt.minimize(self.chisqfc, self.params, method=method, options=options)  # bounds=bounds
         self.params = np.array(result.x)
         self.results.append(result.x)  # appending results to self.results
 

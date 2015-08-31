@@ -126,7 +126,7 @@ Measured.add_model(              {'model': 'bin',
 # ----------------------------------------
             # Processed Data
 # Fit Coefficients
-ChiSqFit = fit.ChiSqOpt((Measured.bin, Measured.bin2), Theory.bin.params, BMode.bin, Dust.bin)
+ChiSqFit = fit.ChiSqOpt(Measured.bin, Theory.bin.params, BMode.bin, Dust.bin)
 Theory.bin.parameters, BMode.bin.params, Dust.bin.params = ChiSqFit.fit('combo', method='nelder-mead')  # ** retire outputs and put in a fn.updata_params?**
 print '\nBest Fit Parameters:', Theory.bin.parameters, '\n'
 
