@@ -19,7 +19,7 @@ def make_lDict(filename=None, **kw):
 
     # data List
     if 'dataList' in kw:  # if given the dataList
-        dataList = kw.get('lList')
+        dataList = kw.get('dataList')
     elif 'file' in kw:  # if not given dataList, but given kwarg filename
         dataList = np.array([int(x) for x in fn.extractData(kw.get('file'), 0)])
     elif filename is not None:  # if no dataList, no kwarg filename, but filename argument
@@ -184,9 +184,12 @@ def make_frequencies(*args, **kw):
     ''' Reference dictionary of constants
         If no inputs given, comes prepopulated with standard values
     '''
-    frequencies = {}
+    freqs_Dict = {}
+    freqs = []
     for index, value in enumerate(args):
-        frequencies['nu{}'.format(index+1)] = value
+        freqs_Dict['nu{}'.format(index+1)] = value
+        freqs.append(value)
     for value, key in enumerate(kw):
-        frequencies[key] = value
-    return frequencies
+        freqs_Dict[key] = value
+        freqs.append(value)
+    return freqs_Dict, freqs

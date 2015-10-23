@@ -99,24 +99,24 @@ def array_nest(argument, numpy=False):
 ##########################################################################################
                                     # Lists and Binning
 # makes list from upper and lower bounds, and a step
-def makeList(lower, upper, step=1):
+def makeList(start, stop, step=1):
     '''can make a list with float inputs
        can't make a list with upper number > ~6.5e7
     '''
     List = []
-    number = lower
+    number = start
     if isinstance(step, (int, float)):
         if step < 0:
             step = -step
-        if lower > upper:
+        if start > stop:
             step = -step
     # make it so it can accept a list here
-    if lower < upper:
-        while number < upper:
+    if start < stop:
+        while number < stop:
             List.append(number)
             number += step
-    elif lower > upper:
-        while number > upper:
+    elif start > stop:
+        while number > stop:
             List.append(number)
             number += step
     return np.array(List)
@@ -124,8 +124,9 @@ def makeList(lower, upper, step=1):
 
 # bins data
 def binData(data, xData, xStep=[20]):
-    '''averages the given data into bins of the given size
-       Note: unless xStep 1 number, assumes it works for data and xData.
+    ''' averages the given data into bins of the given size
+        It only works on 1 dimensional lists
+        Note: unless xStep 1 number, assumes it works for data and xData.
     '''
     if isinstance(xStep, (int, float)):
         xStep = [xStep]
@@ -145,6 +146,19 @@ def binData(data, xData, xStep=[20]):
         binnum += 1                                                           # steps through the xStep for that bin
         outList.append(np.mean(temp))                                         # appends average of current temp list to the outList
     outList = np.array(outList)
+    return outList
+
+
+def bin2Data(dataList, xData, xStep=[20]):
+    '''averages the given lists of data into lists of bins of the given size by calling binData
+       Note: unless xStep 1 number, assumes it works for data and xData.
+       dataLists are in the form [[data1, data2, data3], [data1, data2, data3]], where each dataX is a list
+    '''
+    outList = []  # the binned list
+    for i, group in enumerate(dataList):  # iterating through the groups in the list of lists of data
+        outList.append([])
+        for j, data in enumerate(group):  # iterating through the lists of data
+            outList[i].append(binData(data, xData, xStep))  # binning the data
     return outList
 
 
@@ -215,6 +229,13 @@ def dudata(data, pct):
     return np.array(noisydata)
 
 
+def noisydata(data, error):
+    noisydata = []
+    for i, datalist in enumerate(data):
+        noisydata.append([np.random.normal(m, err) for m, err in zip(datalist, error[i])])
+    return noisydata
+
+
 def error(data, pct=0.02, mtd=1):
     if mtd == 1:
         error = [pct*max(data) for d in data]
@@ -223,7 +244,8 @@ def error(data, pct=0.02, mtd=1):
     elif mtd == 3:
         error = [pct*data[int(d)] for d in data]
     # else:         # make it so that it can take a user given function
-    return np.array(error)
+    error = np.array(error)
+    return error
 
 
 # Data extractor
@@ -243,9 +265,10 @@ def update_fitdata(*args):
         arguments must be a tuple with the object and the modelname
         ex ((Dust, 'bin'), (Dust, 'raw'))
     '''
-    for argument in args:
-        for val in argument[1:]:
+    for argument in args:  # iterates through arguments
+        for val in argument[1:]:  # iterates through which things to update
             argument[0].add_fitdata(val, None)
+    # *** Change to use an instance initial argument, so that it can update any instance, not just fitdtata ***
 
 
 def update_d_fitdata(*args):

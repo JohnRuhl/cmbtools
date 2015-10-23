@@ -4,7 +4,7 @@
 import numpy as np
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
-from Functions import parameterSplit
+from Functions import parameterSplit, noisydata
 
 # ----- Fit Finders -----
 
@@ -29,89 +29,6 @@ def polyfit(xList, yList, degree=1, rsqr=False):
         return [a, b]
 
 
-# ---------- Least Squares Regression ----------
-class matrixFit(object):
-    """docstring for matrixFit"""
-    def __init__(self, functionList, fitTo, errorFitTo):
-        super(matrixFit, self).__init__()
-        self.fList = functionList  # list of funcitons to fit with
-        self.fitTo = [fitTo]       # list to fit to (stores all previous versions of self)
-        self.d_FitTo = errorFitTo  # error in fitTo
-        self.results = []          # list of all best-fit parameters
-        self.params = None         # current best-fit parameters
-
-    def fit(self, output='list'):
-        ''' Generates normalized A vector using general least squares regression fit
-            Description: A function that takes in 3 lists, corresponding to:
-                a composite list of usable functions (in the form of y-coordinates)
-                the function to which the former composite list should be fit to
-                and the error in the function
-            Returns a list containing the fit parameters for the composite list of functions.
-                if output = 'split', fit will return [[params_BM], [params_d]]
-                if output = 'list', fit will return [params_BM[:], params_d[:]]
-        '''
-        # Creates the A matrix for use in determining the constants
-        columns = len(self.fList)
-        rows = len(self.d_FitTo)
-        # initialize the matrix with float values of 0
-        matrixA = np.matrix([[0.0 for i in self.fList] for i in self.d_FitTo])
-        # initialize the list used as temporary storage for the row values
-        tempList = np.empty(columns)
-
-        for i in range(rows):
-            for j in range(columns):
-                s = self.d_FitTo[j]
-                tempList[j] = self.fList[j][i]/s
-            matrixA[i] = tempList
-
-        # initialization and assignment of vector b
-        vectorB = np.empty(len(self.fitTo[-1]))
-        # fills empty vector with measured/error
-        for y, s, i in zip(self.fitTo[-1], self.d_FitTo, range(len(self.fitTo[-1]))):
-            vectorB[i] = y/s
-        # ((A transpose) dot (A))
-        tempA = np.dot(matrixA.T, matrixA)
-        # inverse of a matrix
-        tempB = tempA.I
-        # Dot Product of matrix and b vector
-        tempC = np.dot(tempB, matrixA.T)
-        # Turns result into python array
-        answer = np.dot(tempC, vectorB)
-
-        ampls = np.array(answer)[0]
-        self.params = np.array([(1-ampls[0]), 0, (1-ampls[1]), 0, 0])
-        self.results.append(self.params)
-
-        if output == 'list':  # fit will return [params_BM[:], params_d[:]] as a unified list
-            return self.params
-        elif output == 'split':  # fit will return [[params_BM], [params_d]]
-            return parameterSplit(self.params)
-        elif output == 'combo':
-            split = parameterSplit(self.params)
-            return self.params, split[0], split[1]
-
-    def finalize(self):
-        self.results = np.array(self.results)
-        self.params = np.mean(self.results, axis=0)
-
-    # Fields for Theory, to call matrixFit:
-     # {'model': 'rawList',
-     #  # 'equation': [BMode.raw.equation, Dust.raw.equation],
-     #  # 'params': [params_BM, params_D],
-     #  'data': [BMode.raw.data, Dust.raw.data],
-     #  'error': [BMode.raw.d_data, Dust.raw.d_data]},  # *** d_data or error?
-     # {'model': 'binList',
-     #  # 'equation': [BMode.bin.equation, Dust.bin.equation],
-     #  # 'params': [params_BM, params_D],
-     #  'data': [BMode.bin.data, Dust.bin.data],
-     #  'error': [BMode.bin.d_data, Dust.bin.d_data]})  # *** d_data or error?
-
-    # Example for Calling matrixFit
-     # matrixFit = fit.matrixFit(Theory.binList.data, Measured.bin.data, Measured.bin.d_data)
-     # Theory.bin.parameters, BMode.bin.params, Dust.bin.params = matrixFit.fit('combo')  # ** retire outputs and put in a fn.updata_params?**
-     # print Theory.bin.parameters
-
-
 # ---------- Chi Square Optimizer ----------
 class ChiSqOpt():
     """docstring for ChiSqOpt
@@ -121,89 +38,63 @@ class ChiSqOpt():
         '''
         self.measured = Measured
         self.params = parameters  # current best fit parameters
-        self.results = []  # empty list of results
-
-        if isinstance(Measured, tuple): # to keep a log of how the measured data changes
-            measured_log = list(Measured)
-            for i, val in enumerate(measured_log):
-                measured_log[i] = [val.data]
-            self.measured_log = tuple(measured_log)
-            print self.measured_log[0]
-        else:  # there's only one measured, so don't need to store it in a tuple
-            self.measured_log = [self.measured.data]
-
-        # creates args as .arg1, .arg2, etc...
-        for index, val in enumerate(args):
-            setattr(self, 'arg{}'.format(index), val)
-        self.numargs = index+1
-
-        # figures out how many frequency bands there are
-        numreps = 1
-        for group in ([Measured] + list(args)):
-            if isinstance(group, tuple):
-                if len(group) > numreps:
-                    numreps = len(group)
-                    break  # they all have to be the same length, or length 1, so can quit
-        self.numreps = numreps
-
+        self.results = []  # empty list of resulting parameter fits
+        self.args = args
+        self.freqs = Measured.freqs
+        self.measured_log = [Measured.fitdata[-1]]
+        self.chisq = []
 
     # Theory Constructions of the Data for fits
-    def residual(self, index, *args):
+    def residual(self, index, freq, *params):
         '''
             needs parameters as input since they will be changed by the fitter
             make sure the parameters are in the same order as the objects (Bmode parameters with BMode equation)
         '''
         # finding the model
         model = 0
-        for i in range(self.numargs):
-            print i,
-            group = getattr(self, 'arg{}'.format(i))  # first BMode, then Dust
-            if isinstance(group, tuple):  # if it's a tuple, then need to select the right index
-                temp = group[index]
-            else:
-                temp = group
-            model += temp.equation(temp.eqinput, args[i])  # evaluating the equation
+        for i, val in enumerate(self.args):  # iterates through the arguments
+            eqinput = val.eqinput[:]  # getting the eqinput for the equation, the [:] prevents linking
+            if None in eqinput:  # finding if a freq needs to be given
+                none_index = eqinput.index(None)  # finding where freq needs to be
+                eqinput[none_index] = freq  # giving eqinput the correct freq
+            model += val.equation(eqinput, params[i])  # evaluating the equation
 
         # finding the residual
-        if isinstance(self.measured_log, tuple):
-            residual = self.measured_log[index][-1] - model              # *** why calling the last one? ***
-        else:
-            residual = self.measured_log[-1] - model
+        residual = self.measured_log[-1][index] - model  # *** why calling the last one? ***
         return residual
-        '''have two residuals, 1 from 90 and 1 from 150'''
-
-    def error(self, index):
-        if isinstance(self.measured, tuple):
-            d_data = self.measured[index].d_data
-        else:
-            d_data = self.measured.d_data
-        return d_data
 
     def chisqfc(self, parameters):
+        ''' Calculates the sum of the chisq of all the bands'''
         # preparing inputs
         params_BM, params_d = parameterSplit(parameters)
 
-        chisq = 0
-        for index in range(self.numreps):
-            print '\n', index
+        chisq_sum = 0
+        chisq_log = []
+        for index, freq in enumerate(self.freqs):  # iterates through the frequency bands
             # finding the residual
-            residual = self.residual(index, params_BM, params_d)
+            residual = self.residual(index, freq, params_BM, params_d)
             # finding the error
-            d_data = self.error(index)
-            # finding the chi-squared
-            chisq += np.sum((residual/d_data)**2)  # *** reference right d_data in measured tuple ***
-
-        return chisq
-        ''' MINIMIZE THE SUM OF 2 Chi-Sq, 90 and 150'''
+            d_data = self.measured.d_fitdata[-1][index]
+            try:  # checking if d_data exists
+                residual/d_data
+            except TypeError:  # else assuming 2% error
+                d_data = [x/50 for x in self.measured.fitdata[-1][index]]
+            # finding the chi-square
+            chisq = np.sum((residual/d_data)**2)
+            # recording the chi-square
+            chisq_log.append(chisq)
+            chisq_sum += chisq
+        self.chisq.append(np.array(chisq_log))
+        return chisq_sum
 
     def fit(self, output='list', **kw):
         ''' needs scipy.optimize imported as opt
         '''
         # selection of optimizaiton method
-        method, options = self.optimization_options(kw)
+        method, options, tol = self.optimization_options(kw)
         # bounds = ((0, None), (0, None), (0, None), (0, 1e3))
 
-        result = opt.minimize(self.chisqfc, self.params, method=method, options=options)  # bounds=bounds
+        result = opt.minimize(self.chisqfc, self.params, method=method, options=options, tol=tol)  # bounds=bounds
         self.params = np.array(result.x)
         self.results.append(result.x)  # appending results to self.results
 
@@ -232,63 +123,33 @@ class ChiSqOpt():
                 if 'maxfev' in kw: # maximum number of function evaluations
                     options['maxfev'] = kw.get('maxfev')
         else:  # giving options individually
-            options = {'maxiter': 1e5, 'maxfev': 1e5}  # pre-populating options
+            options = {'maxiter': 1e5, 'maxfev': 1e5, 'xtol': 1e-1}  # pre-populating options
             if 'maxiter' in kw:  # maximum number of iterations
                 options['maxiter'] = kw.get('maxiter')
             if 'maxfev' in kw: # maximum number of function evaluations
                 options['maxfev'] = kw.get('maxfev')
-        return method, options
+            if 'xtol' in kw:
+                options['xtol'] = kw.get('xtol')
+
+        if 'tol' in kw:
+            tol = kw.get('method')
+        else:
+            tol = None
+
+        return method, options, tol
 
     def finalize(self):
         self.results = np.array(self.results)
-        self.params = np.mean(self.results, axis=0)
+        self.params = np.mean(self.results, axis=0)  # *** CHANGE THIS ***
         self.measured_log = np.array(self.measured_log)
-
-    # def fit_1line(self, method, options):
-    #     '''
-    #     '''
-    #     result = opt.minimize(self.chisqfc, self.params, method=method, options=options)
-    #     self.results.append(result.x) # appending results to self.results
-    #     return result
-
-    # def optimize_0in(self):
-    #     '''
-    #     '''
-    #     result = opt.minimize(self.function, self.params)
-    #     self.results.append(result.x) # appending results to self.results
-    #     return result
+        self.chisq = np.array(self.chisq)
 
 
 #######################################################################################
 #                                 Monte-Carlos
 
-# Matrix Fit
-def MCMatrixFit(TList, measured, std, iterate=10**4, **kw):
-    '''
-    '''
-    # Initializing Fit
-    MC = matrixFit(TList, None, std)
-    # Monte Carlo Method
-    print '\nChi-Sq Monte Carlo Iteration #:'
-    for i in range(int(iterate)):
-        print i+1,
-        # generating yList
-        yList = [np.random.normal(m, err) for m, err in zip(measured, std)]
-        # adding new fake 'measured' data
-        MC.fitTo.append(yList)
-        # Doing the best fit
-        MC.fit()
-    # Finalizing Fit
-    MC.finalize()
-    print '\n parameters: {}\n'.format(MC.params)
-    return MC
-
-    # Example:
-    # MCData = fit.MCMatrixFit(Theory.binList.data, Theory.bin.fitdata, Theory.bin.d_fitdata, iterate=10**4)  # Monte Carlo of _________
-
-
-def MCChiSqFit(measured, BMode, Dust, iterate=10**4, **kw):
-    '''
+def MCChiSqFit(measured, parameters, BMode, Dust, iterate=10**4, **kw):
+    ''' Description
     '''
     if 'method' in kw:
         method = kw.get('method')
@@ -296,14 +157,22 @@ def MCChiSqFit(measured, BMode, Dust, iterate=10**4, **kw):
         method = None
 
     # Initializing Fit
-    MC = ChiSqOpt(measured, measured.params, BMode, Dust)
+    MC = ChiSqOpt(measured, parameters, BMode, Dust)
 
     # Monte Carlo Method
     print '\nChi-Sq Monte Carlo Iteration #:'
     for i in range(int(iterate)):
         print i+1,
         # generating yList
-        yList = [np.random.normal(m, err) for m, err in zip(measured.fitdata, measured.d_fitdata)]
+        data = measured.fitdata[-1]
+        try:
+            yList = noisydata(data, measured.d_fitdata[-1])
+        except TypeError:
+            try:
+                yList = noisydata(data, kw.get('error'))
+            except TypeError:
+                error = [x/50 for x in [y for y in data]]  # returning 2% error
+                yList = noisydata(data, error)
         MC.measured_log.append(yList)
         # Doing the best fit
         MC.fit(method=method)
