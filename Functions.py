@@ -10,7 +10,7 @@ from fractions import gcd
 def floor(number):
     ''' Returns the floor of a number
     '''
-    return int(number)
+    return (number-(number % (number/abs(number))))
 
 
 def ceil(number):
@@ -128,25 +128,24 @@ def binData(data, xData, xStep=[20]):
         It only works on 1 dimensional lists
         Note: unless xStep 1 number, assumes it works for data and xData.
     '''
-    if isinstance(xStep, (int, float)):
-        xStep = [xStep]
-        for i in range((len(xData)-(len(xData) % xStep[0]))/xStep[0]):        # yields the floor of the division of (len(nData))/xStep
-            xStep.append(xStep[0])
-    elif len(xStep) == 1:                                                     # makes xStep a list
-        for i in range((len(xData)-(len(xData) % xStep[0]))/xStep[0]):        # yields the floor of the division of (len(nData))/xStep
-            xStep.append(xStep[0])
+    if isinstance(xStep, (int, float)) or len(xStep) == 1:
+        if isinstance(xStep, (int, float)):
+            temp, xStep = xStep, [xStep]
+        elif len(xStep) == 1:
+            temp = xStep[0]
+        for i in range(int(len(xData)/temp)-1):  # yields the floor of the division of (len(nData))/xStep
+            xStep.append(temp)
+        if len(xData) % temp != 0:  # if xStep doesn't fit evenly into len(xData)
+            xStep.append(len(xData) % temp)
+
     outList = []
-    index, binnum = 0, 0                                                      # index steps through every datapoint. binnum is current bin number
-    for i in range((len(xData)-(len(xData) % xStep[binnum]))/xStep[binnum]):  # steps thru the bins
-        temp = []
-        for j in range(xStep[binnum]):                                        # steps thru data in each bin
-            # print len(data), index
-            temp.append(data[index])                                          # appends data to temp list
-            index += 1                                                        # index always increases, never reset
-        binnum += 1                                                           # steps through the xStep for that bin
-        outList.append(np.mean(temp))                                         # appends average of current temp list to the outList
+    index = 0  # index steps through every datapoint. binnum is current bin number
+    for i, Bin in enumerate(xStep):
+        temp = np.mean(data[index:(index+Bin)])
+        outList.append(temp)
+        index += Bin
     outList = np.array(outList)
-    return outList
+    return outList, xStep
 
 
 def bin2Data(dataList, xData, xStep=[20]):
@@ -158,20 +157,8 @@ def bin2Data(dataList, xData, xStep=[20]):
     for i, group in enumerate(dataList):  # iterating through the groups in the list of lists of data
         outList.append([])
         for j, data in enumerate(group):  # iterating through the lists of data
-            outList[i].append(binData(data, xData, xStep))  # binning the data
+            outList[i].append(binData(data, xData, xStep)[0])  # binning the data
     return outList
-
-
-# bins dictionary of data
-def binDict(dictionary, xData, xStep=[20]):
-    '''averages the data in the dictionary into bins of the given size
-       Note: unless xStep 1 number, assumes it works for data and xData.
-       Dictionary must only be composed of data to be binned
-    '''
-    outDict = {}
-    for data, key in enumerate(dictionary):
-        outDict[key] = binData(data, xData, xStep)
-    return outDict
 
 
 # Centers of Bins
@@ -184,16 +171,6 @@ def binCenter(lBins):
         temp.append(v)
         centers.append(0.5*(temp[i]+temp[i+1]))
     return np.array(centers)
-
-
-def addDictData(*args):
-    ''' both dictionaries must have the same keys!
-    '''
-    answer = args[0]
-    for dictionary in args[1:]:
-        for key, value in dictionary.iteritems():
-            answer[key] += value
-    return answer
 
 
 def parameterSplit(parameters):
@@ -222,17 +199,24 @@ def parameterSplit(parameters):
 
 ##########################################################################################
                                     # Generating Data
-def dudata(data, pct):
-    ''' makes dud data
+
+def noisyDataList(datalist, error):
+    ''' (datalist, error)
+        This function adds noise to the data, which is a list of lists
+        the error can be a list
     '''
-    noisydata = [np.random.normal(T, abs(T*pct)) for T in data]
-    return np.array(noisydata)
-
-
-def noisydata(data, error):
     noisydata = []
-    for i, datalist in enumerate(data):
-        noisydata.append([np.random.normal(m, err) for m, err in zip(datalist, error[i])])
+    for i, data in enumerate(datalist):
+        noisydata.append([np.random.normal(m, err) for m, err in zip(data, error[i])])
+    return noisydata
+
+
+def noisyData(datalist, error):
+    ''' (datalist, error)
+        This function adds noise to the data, which is a list of lists
+        the error can be a list
+    '''
+    noisydata = [np.random.normal(m, err) for m, err in zip(datalist, error)]
     return noisydata
 
 
@@ -260,42 +244,13 @@ def extractData(filename, columnNumber=3):
 
 ##########################################################################################
                                     # Updating Data
-def update_fitdata(*args):
-    '''
-        arguments must be a tuple with the object and the modelname
-        ex ((Dust, 'bin'), (Dust, 'raw'))
-    '''
-    for argument in args:  # iterates through arguments
-        for val in argument[1:]:  # iterates through which things to update
-            argument[0].add_fitdata(val, None)
-    # *** Change to use an instance initial argument, so that it can update any instance, not just fitdtata ***
 
-
-def update_d_fitdata(*args):
+def update(method, *args):
     '''
+        Give the method as a string
         arguments must be a tuple with the object and the modelname
         ex ((Dust, 'bin'), (Dust, 'raw'))
     '''
     for argument in args:
         for val in argument[1:]:
-            argument[0].add_d_fitdata(val, None)
-
-
-# def data(function, func_input, iterator, mtd=1, ind_var=0):
-#     ''' Generates Data by evaluation a function over a an iterator
-#         function: the function to be evaluated
-#             must have only one input. Input must be a tuple
-#             independent variable must be the first input
-#         func_input: a tuple containing the inputs to the function
-#             must contain the independent variable
-#             independent variable is assumed to be first in tuple unless otherwise stated in "ind_var"
-#         iterator: the list over which the function is evaluated
-#         mtd: selects which method to use
-#         ind_var: specifies location of independent variable in func_input
-#     '''
-#     if mtd == 1:
-#         data = [function(func_input) for func_input[ind_var] in iterator]
-#     else:
-#         print 'Error: section in development'
-#         return
-#     return data
+            getattr(getattr(getattr(argument[0], val), method), 'add_{}'.format(method))(None)

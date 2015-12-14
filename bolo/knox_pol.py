@@ -157,7 +157,7 @@ plt.show()
 # plots
 f = l*(l+1)/(2*numpy.pi);  # conversion back to D_ell...
 ax = plt.subplot(111)
-plt.errorbar(l, f*Cls[:,3], xerr=0, yerr=f*numpy.sqrt(cov_BB), linewidth=1.5)
+plt.errorbar(l, f*cov_BB, xerr=0, yerr=f*numpy.sqrt(cov_BB), linewidth=1.5)
 ax.set_yscale("log", nonposy='clip')
 ax.set_ylim(0.001,0.1)
 

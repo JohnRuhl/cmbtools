@@ -3,8 +3,7 @@
 
 import numpy as np
 import scipy.optimize as opt
-import matplotlib.pyplot as plt
-from Functions import parameterSplit, noisydata
+from Functions import parameterSplit, noisyDataList, update
 
 # ----- Fit Finders -----
 
@@ -30,19 +29,24 @@ def polyfit(xList, yList, degree=1, rsqr=False):
 
 
 # ---------- Chi Square Optimizer ----------
-class ChiSqOpt():
+class ChiSqOpt(object):
     """docstring for ChiSqOpt
     """
     def __init__(self, Measured, parameters, *args):
         ''' takes all of the input necessary to do a Chi-Sq  optimization
         '''
         self.measured = Measured
-        self.params = parameters  # current best fit parameters
-        self.results = []  # empty list of resulting parameter fits
-        self.args = args
-        self.freqs = Measured.freqs
         self.measured_log = [Measured.fitdata[-1]]
+        self.freqs = Measured.freqs
+
+        self.params = parameters  # current best fit parameters
+        self.params_log = []  # empty list of resulting parameter fits
         self.chisq = []
+        self.chisq_log = []  # empty list for the chi-square
+
+        self.args = args  # all the models with which to fit
+
+
 
     # Theory Constructions of the Data for fits
     def residual(self, index, freq, *params):
@@ -60,7 +64,7 @@ class ChiSqOpt():
             model += val.equation(eqinput, params[i])  # evaluating the equation
 
         # finding the residual
-        residual = self.measured_log[-1][index] - model  # *** why calling the last one? ***
+        residual = self.measured_log[-1][index] - model  # calling the last one since new ones are made by the Monte Carlo
         return residual
 
     def chisqfc(self, parameters):
@@ -78,25 +82,30 @@ class ChiSqOpt():
             try:  # checking if d_data exists
                 residual/d_data
             except TypeError:  # else assuming 2% error
-                d_data = [x/50 for x in self.measured.fitdata[-1][index]]
+                print "uh oh"
             # finding the chi-square
             chisq = np.sum((residual/d_data)**2)
             # recording the chi-square
             chisq_log.append(chisq)
             chisq_sum += chisq
-        self.chisq.append(np.array(chisq_log))
+        self.chisq_log.append(np.array(chisq_log))
         return chisq_sum
 
     def fit(self, output='list', **kw):
         ''' needs scipy.optimize imported as opt
         '''
         # selection of optimizaiton method
-        method, options, tol = self.optimization_options(kw)
+        if 'method' in kw and 'options' in kw and 'tol' in kw:
+            method, options, tol = kw.get('method'), kw.get('options'), kw.get('tol')
+        else:
+            method, options, tol = self.optimization_options(kw)
         # bounds = ((0, None), (0, None), (0, None), (0, 1e3))
 
         result = opt.minimize(self.chisqfc, self.params, method=method, options=options, tol=tol)  # bounds=bounds
         self.params = np.array(result.x)
-        self.results.append(result.x)  # appending results to self.results
+        self.params_log.append(result.x)  # appending params_log to self.params_log
+        self.chisq = self.chisq_log[-1]
+        self.sigma = self.sigma_error()
 
         if output == 'list':  # fit will return [params_BM[:], params_d[:]] as a unified list
             return self.params
@@ -105,8 +114,15 @@ class ChiSqOpt():
         elif output == 'combo':
             split = parameterSplit(self.params)
             return self.params, split[0], split[1]
+        elif output == 'none':
+            return
 
-    def optimization_options(self, kw):
+    def sigma_error(self):
+        sigma = np.std(self.params_log, axis=0, dtype=np.float64)
+        return sigma
+
+    @staticmethod
+    def optimization_options(kw):
         if 'method' in kw:
             method = kw.get('method')
         else:
@@ -139,44 +155,50 @@ class ChiSqOpt():
         return method, options, tol
 
     def finalize(self):
-        self.results = np.array(self.results)
-        self.params = np.mean(self.results, axis=0)  # *** CHANGE THIS ***
+        self.params_log = np.array(self.params_log)
+        self.params = np.mean(self.params_log, axis=0)  # *** CHANGE THIS ***
         self.measured_log = np.array(self.measured_log)
         self.chisq = np.array(self.chisq)
+        self.chisq_log = np.array(self.chisq_log)
+        self.sigma = np.array(self.sigma)
 
 
 #######################################################################################
-#                                 Monte-Carlos
+#                                 Monte-Carlo
 
-def MCChiSqFit(measured, parameters, BMode, Dust, iterate=10**4, **kw):
-    ''' Description
-    '''
-    if 'method' in kw:
-        method = kw.get('method')
-    else:
-        method = None
+class MCChiSqFitClass(ChiSqOpt):
+    """docstring for MCChiSqFitClass"""
+    def __init__(self, Measured, parameters, *args, **kw):
+        if 'iterate' in kw:  # checking that the iterator is passed
+            self.iterate = kw.get('iterate')
+        else:  # no iterator was passed
+            self.iterate = 10**4
+            # args = (iterate,) + args  # appending the misinterpreted arg back into *args
+        super(MCChiSqFitClass, self).__init__(Measured, parameters, *args)  # inheriting the methods from ChiSqOpt
 
-    # Initializing Fit
-    MC = ChiSqOpt(measured, parameters, BMode, Dust)
+        if 'method' in kw:
+            self.method = kw.get('method')
+        else:
+            self.method = None
 
-    # Monte Carlo Method
-    print '\nChi-Sq Monte Carlo Iteration #:'
-    for i in range(int(iterate)):
-        print i+1,
-        # generating yList
-        data = measured.fitdata[-1]
-        try:
-            yList = noisydata(data, measured.d_fitdata[-1])
-        except TypeError:
-            try:
-                yList = noisydata(data, kw.get('error'))
-            except TypeError:
-                error = [x/50 for x in [y for y in data]]  # returning 2% error
-                yList = noisydata(data, error)
-        MC.measured_log.append(yList)
-        # Doing the best fit
-        MC.fit(method=method)
-    # Finalizing Fit
-    MC.finalize()
-    print '\n parameters: {}\n'.format(MC.params)
-    return MC
+    # def fit()
+    # def chisqfc()
+    # def residual
+    # def optimization_options()
+    # def finalize
+
+    def runMC(self, **kw):
+        print '\nChi-Sq Monte Carlo Iteration #:'
+        for i in range(int(self.iterate)):
+            print i+1,
+            # generating a realization
+            data = self.measured.fitdata[-1]  # getting most recent fit
+            realization = noisyDataList(data, self.measured.d_fitdata[-1])
+            self.measured_log.append(realization)
+
+            params = self.fit(method=self.method)  # Doing the best fit
+            self.measured.params = params  # updating the parameters
+
+        # Finalizing Fit
+        self.finalize()
+        print '\n parameters: {}\nsigma: {}'.format(self.params, self.sigma)
