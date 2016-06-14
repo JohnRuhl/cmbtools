@@ -8,30 +8,28 @@ import Functions as fn                # file with most of the functions
 ##########################################################################################
                                     # lDict
 
-def make_lDict(filename=None, **kw):
+def make_lDict(data=None, **kw):
     ''' making a dictionary with all the angle l values as the x-axis
-        need either an lList or a filename as a kwarg
-        if no inputs other than a filename is given, then comes w/ some prepopulated values
-
-        TO ADDRESS:
-        should dataList be int(X)?
+        Startpoint: either filename str or data list
+        data list must be a list or tuple. will be taken as [int(x) for x in data]
+        if no inputs other than startpoint is given, then comes w/ some prepopulated values
     '''
 
     # data List
-    if 'dataList' in kw:  # if given the dataList
-        dataList = kw.get('dataList')
-    elif 'file' in kw:  # if not given dataList, but given kwarg filename
-        dataList = np.array([int(x) for x in fn.extractData(kw.get('file'), 0)])
-    elif filename is not None:  # if no dataList, no kwarg filename, but filename argument
-        dataList = np.array([int(x) for x in fn.extractData(filename, 0)])
+    if isinstance(data, str):
+        dataList = np.array([int(x) for x in fn.extractData(data, 0)])
+    elif isinstance(data, (list, np.ndarray, tuple)):
+        dataList = np.array([int(x) for x in data])
     else:  # if no dataList is given in any recognizable format
-        print 'Error: need a filename or dataList'
+        print('Error: need a filename or dataList')
         return
+
+    # ---- Base ----
     # base steps
     if 'baseStep' in kw:
         baseStep = kw.get('baseStep')
     else:
-        baseStep = dataList[1]-dataList[0]        # fix this
+        baseStep = dataList[1]-dataList[0]  # fix this
     # data file's minimum l value
     if 'dataMin' in kw:
         dataMin = kw.get('dataMin')
@@ -75,32 +73,32 @@ def make_lDict(filename=None, **kw):
     else:
         lList = np.array(dataList[refMin:refMax])
 
-    # reference list of bins
-    if 'refBins' in kw:
-        refBins = np.array(kw.get('refBins'))
-    else:
-        refBins = fn.makeList(refMin, refMax+lStep, lStep)
-    # list of bins
-    if 'lBins' in kw:
-        lBins = np.array(kw.get('lBins'))
-    else:
-        lBins = fn.makeList(lMin, lMax+lStep, lStep)
+    # # reference list of bins
+    # if 'refBins' in kw:
+    #     refBins = np.array(kw.get('refBins'))
+    # else:
+    #     refBins = fn.makeList(refMin, refMax+lStep, lStep)
+    # # list of bins
+    # if 'lBins' in kw:
+    #     lBins = np.array(kw.get('lBins'))
+    # else:
+    #     lBins = fn.makeList(lMin, lMax+lStep, lStep)
 
-    # reference bin centers
-    if 'refBinCent' in kw:
-        refBinCent = np.array(kw.get('refBinCent'))
-    else:
-        refBinCent = fn.binCenter(refBins)
-    # l bin centers
-    if 'lBinCent' in kw:
-        lBinCent = np.array(kw.get('lBinCent'))
-    else:
-        lBinCent = fn.binCenter(lBins)
+    # # reference bin centers
+    # if 'refBinCent' in kw:
+    #     refBinCent = np.array(kw.get('refBinCent'))
+    # else:
+    #     refBinCent = fn.binCenter(refBins)
+    # # l bin centers
+    # if 'lBinCent' in kw:
+    #     lBinCent = np.array(kw.get('lBinCent'))
+    # else:
+    #     lBinCent = fn.binCenter(lBins)
 
     lDict = {
              # steps
              'baseStep': baseStep,
-             'lStep': lStep,
+             'lStep': [lStep],  # *** NEED List for binning
              # minimums
              'dataMin': dataMin,
              'lMin': lMin,
@@ -113,11 +111,11 @@ def make_lDict(filename=None, **kw):
              'dataList': dataList,
              'lList': lList,
              # binned list
-             'refBins': refBins,
-             'lBins': lBins,
-             # centers of binned list
-             'refBinCent': refBinCent,
-             'lBinCent': lBinCent
+             # 'refBins': refBins,
+             # 'lBins': lBins,
+             # # centers of binned list
+             # 'refBinCent': refBinCent,
+             # 'lBinCent': lBinCent
             }
     return lDict
 

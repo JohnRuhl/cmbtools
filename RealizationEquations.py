@@ -2,127 +2,122 @@
 # ModelEquations
 
 '''
-All 'master' ModelEquations are designated with Signal and must only accept 2 inputs
+All 'master' realizationEquations are designated with Signal and must only accept 2 inputs
 This file holds all the functions for making the theoretical CMB Models
 '''
 
 import numpy as np
-from Functions import parameterSplit
+from Functions import npFloat
 
 
 ##########################################################################################
                                     # Total Signal
 
-def totalSignal((lList, const, frequency, BMode_data), parameters):
-    ''' totalSignal((lList, const, frequency, BMode_data), parameters)
+def totalSignal(inputs, a0, a1, a2, a3, a4):
+    ''' totalSignal((lList, frequency), parameters)
         Creates the total theoretical signal
         Calls the BModeSignal and dustSignal functions
         Adds them
     '''
-    # creating parameter inputs
-    params_BM, params_d = parameterSplit(parameters)
+    # creating parameters
+    params_sq, params_sin = parameterSplit([a0, a1, a2, a3, a4])
+    # getting the inputs
+    inputs_sq, inputs_sin = inputSplit(inputs)  # *** include freqs ***
     # getting functions
-    BMode = BModeSignal(BMode_data, params_BM)
-    Dust = dustSignal((lList, const, frequency), params_d)
+    poly = polySignal(inputs_sq, *params_sq)
+    sine = sineSignal(inputs_sin, *params_sin)
     # adding into one signal
-    signal = np.array(BMode+Dust)
+    signal = np.array(np.add(poly, sine))
     return signal
 
 
+def totalError(inputs, a0, a1, a2, a3, a4):
+    params_sq, params_sin = parameterSplit([a0, a1, a2, a3, a4])
+    inputs_sq, inputs_sin = inputSplit(inputs)
+    polyerror = polyError(inputs_sq, *params_sq)
+    sineerror = sineError()
+
+    error = np.array(polyerror + sineerror)
+    return error
+
 
 ##########################################################################################
-                                    # BMode
+                                    # PolySignal
 
-def BModeSignal(BMode, parameters):
+def polySignal(inputs, a0, a1, a2):
     ''' BModeSignal(BMode, parameters)
-        Fits BMode with equation a*BMode
-        parameters:
-            - integer
-            - amplitude = params[:]
     '''
-    # getting parameters
-    R = parameters[0]
+    parameters = [a0, a1, a2]
+    lList, freq = inputs  # just making sure
     # making BMode model
-    BModeSignal = (R)*BMode
-    return np.array(BModeSignal)
+    polysignal = np.sum([param*np.power(lList, power) for param, power in zip(parameters, range(len(parameters))[::-1])], axis=0)
+    return np.array(polysignal)
 
-
+def polyError(inputs, a0, a1, a2):
+    return 0.02*polySignal(inputs, a0, a1, a2)
 
 ##########################################################################################
-                                    # Dust
+                                    # Sin Signal
 
-def dustSignal((lList, const, frequency), parameters):
-    ''' dustSignal((lList, const, frequency), parameters)
-        Creates the dust signal
-        const holds the constants
-        parameters is the list of fit parameters.
-            parameters = [amplitude, exponent, dust temperature]
-    '''
+def sineSignal(inputs, a0, a1):
+    lList, freq = inputs
     # getting parameter
-    ampl, exp = parameters[:]  # , dustT
-    # getting prefactor
-    prefactor = dustPreFactor(const, frequency, exp)  # , dustT)
+    ampl, period = a0, a1  # , dustT
     # making dust model
-    dustSignal = [(ampl)*(1.*10.**(-20.))*prefactor*dust(l) for l in lList]  # *** multiplying by the constant in temporary ***
-    return np.array(dustSignal)
+    sinesignal = ampl*np.sin(period*lList)*freq**1.59
+    return np.array(sinesignal)
 
+def sineError(*args):
+    return 2.
 
-def dust(lList):  # *** change this name ***
-    ''' dust(lList)
-        Exponential dust function
+##########################################################################################
+                                    # Parameters
+
+def parameterSplit(parameters):
+    ''' This function splits the list of parameters into the BMode and Dust sections
     '''
-    lList = np.float64(lList)  # precision and datatype correct
-    # making model
-    dust = (lList/80.)**(-0.42)
-    return dust
+    # poly function
+    try:  # checking if already packaged
+        len(parameters[0])
+    except:  # just a list, so package
+        params_sq = parameters[:-2]
+    else:  # already packaged
+        params_sq = parameters[0]
+    finally:
+        params_sq = np.array(params_sq)
+
+    # Sin function
+    try:
+        len(parameters[1])
+    except:
+        params_sin = parameters[-2:]
+    else:
+        params_sin = parameters[1]
+    finally:
+        params_sin = np.array(params_sin)
+
+    return params_sq, params_sin
+
+def inputSplit(inputs):
+    # poly function
+    inputs_sq = inputs[:]   # *** right now is all inputs ***
+
+    # sine function
+    inputs_sin = inputs[:]   # *** right now is all inputs ***
+
+    return inputs_sq, inputs_sin
 
 
-def dustPreFactor(const, frequency, exp, dustT=19.6):
-    ''' dustPreFactor(const, frequency, exp, dustT):
-        Dust frequency powerlaw and blackbody curve
-    '''
-    # getting out the constants
-    nu0, List, Tcmb = const['nu0'], const['List'], const['Tcmb']
-    # finding the dust frequency powerlaw
-    powerlaw = dustFreqPowLaw(frequency, nu0, exp)
-    # finding the blackbody curve
-    blackbody = blackbody_nu(frequency, List, dustT)
-    # getting the conversion for the blackbody
-    blackbody_conversion = blackbody_convert(frequency, List, Tcmb)
-    # makeing the dust pre-factor
-    dustPreFactor = powerlaw*blackbody/blackbody_conversion
-    return dustPreFactor
+def makeParamInputs(params, output="all"):
+    params = npFloat(list(params))
+    params_sq, params_sin = parameterSplit(params)
+
+    if output == "all":
+        return params, params_sq, params_sin
+    else:
+        return params
 
 
-def dustFreqPowLaw(frequency, nu0, exp):
-    ''' dustFreqPowLaw(frequency, nu0, exp)
-        the exponent is added to the theoretical value of 1.59
-    '''
-    frequency, nu0 = np.float64(frequency), np.float64(nu0)
-    powerlaw = (frequency/nu0)**(exp)  # theory exp is 1.59
-    return powerlaw
-
-
-def blackbody_nu(nu, List, dustT=19.6):
-    ''' blackbody_nu(nu, List, dustT)
-        Another Planck's Law equation
-        nu, h=6.62606957*(10**-34), c=299792458, k=1.3806488*(10**-23), T=2.7
-        the T starts at the mean dust value of 19.6 K
-    '''
-    h, c, k = List[0:3]
-    blackbody_Nu = (2.*(h*(nu**3.))/(c**2.))*(1./(np.exp((h*(nu))/(k*(dustT))) - 1.))
-    return blackbody_Nu
-
-
-def blackbody_convert(nu, List, T):
-    ''' blackbody_convert(nu, List, T)
-        A Plancks Law frequency function to convert the Black Body equation to the right units
-        That's why it uses Tcmb instead of TDust, it is converting to the same metric
-        nu,  const = [h, c, k, Tcmb, TDust]
-        TDust=19.6, h=6.62606957*(10**-34), c=299792458, k=1.3806488*(10**-23), Tcmb = 2.7
-        It is the derivative of blackbody_nu, converting to CMB
-    '''
-    h, c, k, Tcmb, TDust = List[:]
-    numerator = (2.*(h**2.)*(nu**4.)*np.exp((h*nu)/(k*Tcmb)))
-    denominator = (k*(Tcmb**2.)*(c**2.)*((np.exp((h*nu)/(k*Tcmb)) - 1.)**2.))
-    return numerator/denominator
+# x = np.arange(10)
+# parameters = [1, 1, 1, 1, 1]
+# print(totalSignal(x, *parameters))

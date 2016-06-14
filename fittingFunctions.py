@@ -3,10 +3,12 @@
 
 import numpy as np
 import scipy.optimize as opt
-from Functions import parameterSplit, noisyDataList, update
+import scipy.special as sf
+import copy as copy
+import Classes as clss
+from Functions import noisyData
 
 # ----- Fit Finders -----
-
 
 # Line of Best Fit (using Least Squares Regression):
 def polyfit(xList, yList, degree=1, rsqr=False):
@@ -28,177 +30,212 @@ def polyfit(xList, yList, degree=1, rsqr=False):
         return [a, b]
 
 
+class Params(object):
+        """docstring for Params"""
+        def __init__(self, params, p0, fitwith):
+            self.params = params
+            self.p0 = p0
+            self.fitwith = fitwith
+            self.lenparams = self.begs = self.ends = None
+            self.setparamprops()
+
+        def setparamprops(self, lenparams=None, begs=None, ends=None):
+            """sets lenparams -- list of len of params in fitwith, begs -- starting indices in *params for fitwith,
+            and ends -- starting indices in *params for fitwith.
+            can be over-written by a kwarg
+            """
+            if lenparams is None:
+                self.lenparams = [len(fitwith.eqn.params) for fitwith in self.fitwith]  # list of len of params
+            else:
+                self.lenparams = lenparams
+            if begs is None:
+                self.begs = np.cumsum(np.insert(self.lenparams[:-1], 0, 0))  # starting indices
+            else:
+                self.begs = begs
+            if ends is None:
+                self.ends = np.cumsum(self.lenparams)  # ending indices
+            else:
+                self.ends = ends
+
+        def splitParams(self, *params, update_params=False):
+            if params is None:  # just need to split current params
+                return self.splitParams_fast((self.begs, self.ends), *self.params)
+            else:  # splitting different params
+                lenparams = [len(x.eqn.params) for x in self.fitwith]
+                begs = np.cumsum(np.insert(lenparams[:-1], 0, 0))  # starting indices
+                ends = np.cumsum(lenparams)  # ending indices
+                if update_params is True:
+                    setparamprops(lenparams=lenparams, begs=begs, ends=ends)
+            return self.splitParams_fast((begs, ends), *params)
+
+        def splitParams_fast(self, indices, *params):
+            """indices = (begs, ends), begs = [0, 3, 5]"""
+            pList = [params[int(i):int(j)] for i, j in zip(indices[0], indices[1])]
+            return pList
+
+
+
 # ---------- Chi Square Optimizer ----------
-class ChiSqOpt(object):
-    """docstring for ChiSqOpt
+class OptimizeClass(object):
+    """docstring for OptimizeClass
     """
-    def __init__(self, Measured, parameters, *args):
-        ''' takes all of the input necessary to do a Chi-Sq  optimization
+    def __init__(self, measured, p0, *fitwith):  # *** measured, parameters, *fitwith***
+        ''' takes all of the input necessary to do a Chi-Sq optimization
         '''
-        self.measured = Measured
-        self.measured_log = [Measured.fitdata[-1]]
-        self.freqs = Measured.freqs
+        self.freqs = clss.ModelClass.freqs  # *** or get from measured.freqs?***
+        self.measured = measured
 
-        self.params = parameters  # current best fit parameters
-        self.params_log = []  # empty list of resulting parameter fits
-        self.chisq = []
-        self.chisq_log = []  # empty list for the chi-square
+        self.fitwith = fitwith  # all the models with which to fit
 
-        self.args = args  # all the models with which to fit
+        self.chisq = None
+        self.cov = None
 
+        self.Params = Params(p0, p0, self.fitwith)
 
+    # -----------------
+    # Params shortcuts
+    @property
+    def params(self):
+        return self.Params.params   # return self.fitwith.eqn.params
+    @params.setter
+    def params(self, params):
+        self.Params.params = params  # self.fitwith.eqn.params = params
 
-    # Theory Constructions of the Data for fits
-    def residual(self, index, freq, *params):
-        '''
-            needs parameters as input since they will be changed by the fitter
-            make sure the parameters are in the same order as the objects (Bmode parameters with BMode equation)
-        '''
-        # finding the model
-        model = 0
-        for i, val in enumerate(self.args):  # iterates through the arguments
-            eqinput = val.eqinput[:]  # getting the eqinput for the equation, the [:] prevents linking
-            if None in eqinput:  # finding if a freq needs to be given
-                none_index = eqinput.index(None)  # finding where freq needs to be
-                eqinput[none_index] = freq  # giving eqinput the correct freq
-            model += val.equation(eqinput, params[i])  # evaluating the equation
+    def update_fitwith_params(self, *params, indices=None, reval=False):
+            if indices is None:
+                p = self.Params.splitParams(*params)
+            else:  # Should be faster
+                p = self.Params.splitParams_fast(indices, *params)
+            for i, fitwith in enumerate(self.fitwith):
+                fitwith.eqn.update_params(p[i], reval=reval)
 
-        # finding the residual
-        residual = self.measured_log[-1][index] - model  # calling the last one since new ones are made by the Monte Carlo
-        return residual
+    # Composite model of all fitwiths
+    def ymodel(self, inputs, *params):
+        pList = self.Params.splitParams_fast((self.Params.begs, self.Params.ends), *params)
+        models = [np.concatenate(fitwith.eqn.freqfunc(x, *p)) for fitwith, x, p in zip(self.fitwith, inputs, pList)]
+        return np.sum(models, axis=0)  # summing all the fitwiths
 
-    def chisqfc(self, parameters):
-        ''' Calculates the sum of the chisq of all the bands'''
-        # preparing inputs
-        params_BM, params_d = parameterSplit(parameters)
+    def freqmodel(self, inputs, *params):
+        pList = self.Params.splitParams_fast((self.Params.begs, self.Params.ends), *params)
+        models = np.array([fitwith.eqn.func(x, *p) for fitwith, x, p in zip(self.fitwith, inputs, pList)])
+        return np.sum(models, axis=0)  # summing all the fitwiths
 
-        chisq_sum = 0
-        chisq_log = []
-        for index, freq in enumerate(self.freqs):  # iterates through the frequency bands
-            # finding the residual
-            residual = self.residual(index, freq, params_BM, params_d)
-            # finding the error
-            d_data = self.measured.d_fitdata[-1][index]
-            try:  # checking if d_data exists
-                residual/d_data
-            except TypeError:  # else assuming 2% error
-                print "uh oh"
-            # finding the chi-square
-            chisq = np.sum((residual/d_data)**2)
-            # recording the chi-square
-            chisq_log.append(chisq)
-            chisq_sum += chisq
-        self.chisq_log.append(np.array(chisq_log))
-        return chisq_sum
+    # CURVE FIT
+    def curve_fit(self, full_output=False, print_out=False, reval=False):
+        """only handles one function model. Doesn't handle errors which are dependant on the parameters"""
+        # Set-Up
+        x = [fitwith.eqn.inputs for fitwith in self.fitwith]
+        y = np.concatenate(self.measured.evaln)
+        sigma_y = np.concatenate(self.measured.d_evaln)
 
-    def fit(self, output='list', **kw):
-        ''' needs scipy.optimize imported as opt
-        '''
-        # selection of optimizaiton method
-        if 'method' in kw and 'options' in kw and 'tol' in kw:
-            method, options, tol = kw.get('method'), kw.get('options'), kw.get('tol')
-        else:
-            method, options, tol = self.optimization_options(kw)
-        # bounds = ((0, None), (0, None), (0, None), (0, 1e3))
+        # print(len(self.ymodel(x, *self.Params.p0)))
 
-        result = opt.minimize(self.chisqfc, self.params, method=method, options=options, tol=tol)  # bounds=bounds
-        self.params = np.array(result.x)
-        self.params_log.append(result.x)  # appending params_log to self.params_log
-        self.chisq = self.chisq_log[-1]
-        self.sigma = self.sigma_error()
+        # Evaluating
+        (p, C) = opt.curve_fit(self.ymodel, x, y, sigma=sigma_y, p0=self.Params.p0)
 
-        if output == 'list':  # fit will return [params_BM[:], params_d[:]] as a unified list
-            return self.params
-        elif output == 'split':  # fit will return [[params_BM], [params_d]]
-            return parameterSplit(self.params)
-        elif output == 'combo':
-            split = parameterSplit(self.params)
-            return self.params, split[0], split[1]
-        elif output == 'none':
-            return
+        # Updating
+        self.params = p
+        self.update_fitwith_params(*p, reval=reval)  # *** should be doing this? ***
+        self.chisq = np.sum((y - self.ymodel(x, *p))**2 / sigma_y**2)
+        self.cov = C
 
-    def sigma_error(self):
-        sigma = np.std(self.params_log, axis=0, dtype=np.float64)
-        return sigma
+        if full_output + print_out > 0:  # either fulloutput or printout is True
+            full = {}  # Full output dictionary
+            full["params"] = p
+            full["cov"] = C
+            full["chisq"] = self.chisq
+            full["dof"] = len(y) - len(p)
+            full["Q"] = sf.gammaincc(0.5 * full["dof"], 0.5 * full["chisq"])
 
-    @staticmethod
-    def optimization_options(kw):
-        if 'method' in kw:
-            method = kw.get('method')
-        else:
-            method = 'nelder-mead'  # choose a better method as default?
-        if method is None:
-            method = 'nelder-mead'
-        # giving a full dict of options
-        if 'options' in kw:
-            options = kw.get('options')
-            if options is None:
-                options = {'maxiter': 1e5, 'maxfev': 1e5}  # pre-populating options
-                if 'maxiter' in kw:  # maximum number of iterations
-                    options['maxiter'] = kw.get('maxiter')
-                if 'maxfev' in kw: # maximum number of function evaluations
-                    options['maxfev'] = kw.get('maxfev')
-        else:  # giving options individually
-            options = {'maxiter': 1e5, 'maxfev': 1e5, 'xtol': 1e-1}  # pre-populating options
-            if 'maxiter' in kw:  # maximum number of iterations
-                options['maxiter'] = kw.get('maxiter')
-            if 'maxfev' in kw: # maximum number of function evaluations
-                options['maxfev'] = kw.get('maxfev')
-            if 'xtol' in kw:
-                options['xtol'] = kw.get('xtol')
+            if print_out is True:
+                print("Best fit:")
+                for i, val in enumerate(p):
+                    print("a{} = {} +/- {}".format(i, val, np.sqrt(C[i, i])))
+                print("chisq = {} \nndof = {} \ngoodness of fit = {}".format(full["chisq"], full["dof"], full["Q"]))
+            if full_output is True:
+                return p, C, full
+        return p, C
 
-        if 'tol' in kw:
-            tol = kw.get('method')
-        else:
-            tol = None
-
-        return method, options, tol
-
-    def finalize(self):
-        self.params_log = np.array(self.params_log)
-        self.params = np.mean(self.params_log, axis=0)  # *** CHANGE THIS ***
-        self.measured_log = np.array(self.measured_log)
-        self.chisq = np.array(self.chisq)
-        self.chisq_log = np.array(self.chisq_log)
-        self.sigma = np.array(self.sigma)
+    def finalizeOpt(self):
+        for i, fitwith in enumerate(self.fitwith):
+            fitwith.eqn.reval()
 
 
-#######################################################################################
-#                                 Monte-Carlo
+class MonteCarloClass(OptimizeClass):
+    """docstring for MonteCarloClass"""
+    def __init__(self, measured, p0, *fitwith, **kw):
+        super(MonteCarloClass, self).__init__(measured, p0, *fitwith)
 
-class MCChiSqFitClass(ChiSqOpt):
-    """docstring for MCChiSqFitClass"""
-    def __init__(self, Measured, parameters, *args, **kw):
+        self.measured_log = [measured.eqn.evaln.copy()]   # *** update to get newest, better shallow copy ***
+        self.chisq_log = []
+        # keeping track of Params
+        self.Params.params_log = []
+        self.cov_log = []
+        self.sigma = None
+
+        # ModelClass Realization for consistent packaging
+        self.rlz= None
+
         if 'iterate' in kw:  # checking that the iterator is passed
             self.iterate = kw.get('iterate')
         else:  # no iterator was passed
             self.iterate = 10**4
-            # args = (iterate,) + args  # appending the misinterpreted arg back into *args
-        super(MCChiSqFitClass, self).__init__(Measured, parameters, *args)  # inheriting the methods from ChiSqOpt
 
-        if 'method' in kw:
-            self.method = kw.get('method')
-        else:
-            self.method = None
-
-    # def fit()
-    # def chisqfc()
-    # def residual
-    # def optimization_options()
-    # def finalize
+        # if 'method' in kw:
+        #     self.method = kw.get('method')
+        # else:
+        #     self.method = None
 
     def runMC(self, **kw):
-        print '\nChi-Sq Monte Carlo Iteration #:'
-        for i in range(int(self.iterate)):
-            print i+1,
-            # generating a realization
-            data = self.measured.fitdata[-1]  # getting most recent fit
-            realization = noisyDataList(data, self.measured.d_fitdata[-1])
-            self.measured_log.append(realization)
+        if "iterate" in kw:
+            iterate = kw.get("iterate")
+        else:
+            iterate = self.iterate
 
-            params = self.fit(method=self.method)  # Doing the best fit
-            self.measured.params = params  # updating the parameters
+        print('\nChi-Sq Monte Carlo Iteration #:')
+        for i in range(int(iterate)):
+            print(i+1, end=", ")
+            # generating a realization
+            data = self.measured.evaln  # *** update to get newest ***
+            realization = noisyData(data, self.measured.d_evaln)
+            self.measured_log.append(realization)  # tracking the realization
+            params, cov, full = self.curve_fit(full_output=True)
+
+            self.Params.params_log.append(params)  # *** or self.params ***
+            self.chisq_log.append(self.chisq)  # *** or self.chisq ***
+            self.cov_log.append(cov)
 
         # Finalizing Fit
-        self.finalize()
-        print '\n parameters: {}\nsigma: {}'.format(self.params, self.sigma)
+        self.finalizeMC(**kw)
+
+        return self.params, self.cov, full  # this full is only the last
+
+    def finalizeMC(self, **kw):
+        self.measured_log = np.array(self.measured_log)
+        self.chisq_log = np.array(self.chisq_log)
+
+        self.cov_log = np.array(self.cov_log)
+        self.cov = np.mean(self.cov_log, axis=0)
+
+        self.Params.params_log = np.array(self.Params.params_log)
+        self.sigma = np.std(self.Params.params_log, axis=0, dtype=np.float64)
+        self.params = np.mean(self.Params.params_log, axis=0)
+        self.update_fitwith_params(*self.params)
+        super(MonteCarloClass, self).finalizeOpt()  # finalize from OptimizeClass
+
+        # print("\n", np.array([fitwith.eqn.inputs for fitwith in self.fitwith]))
+
+        # self.rlz = clss.ModelClass("MC Fit", {"model": "rlz", "equation": {"func": self.freqmodel,
+        #                                                                    "inputs": np.array([fitwith.eqn.inputs for fitwith in self.fitwith]),
+        #                                                                    "params": np.array(self.params)}})
+                  # "error": {"func": reqn.polyError, "inputs": lDict["lList"], "params": rparams_sq}})  # *** figure out error ***
+        try:
+            print_out = kw["print_out"]
+        except Exception:
+            pass
+        else:
+            if print_out is True:
+                print("Monte Carlo fit:")
+                for i, val in enumerate(self.params):
+                    print("a{} = {} +/- {}".format(i, val, np.sqrt(self.cov[i, i])))
+                print("sigma = {} ".format(self.sigma))
