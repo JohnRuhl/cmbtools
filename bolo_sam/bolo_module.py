@@ -55,15 +55,17 @@ def optical_calcs(data, datasrc):
         x = h*data['nu']/(k*datasrc[i]['T'])
         #occupation number; this is eps*eta_tot*band/(e^x -1).
         # band*tau is freq-dependent, and n the case of tau element-dependent, optical efficiency
-        n = datasrc[i]['eps']*eta_tot*data['band']\
-        /numpy.longdouble((numpy.exp(x)-float(1)))
+        n = datasrc[i]['eps']*eta_tot*data['band']*data['tau']\
+        /numpy.longdouble((numpy.exp(x)-float(1)))     
+	if datasrc[i]['name']=='atm': 
+		print x
         #power per mode per Hz
         P = h*data['nu']*n
         #total power integrated across band
         datasrc[i]['Q'] = numpy.trapz(P, data['nu'])
         datasrc[i]['T_RJ'] = datasrc[i]['Q']/data['dPdT_RJ']
         #phonon noise integral
-        integrand = 2*((h**2)*(data['nu']**2))*(data['Nmodes']*data['Npol'])*(n+n**2)
+        integrand = 2*((h**2)*(data['nu']**2))*(2*data['Nmodes']*data['Npol'])*n#+n**2)
         #print n, n**2, map(add,n,n**2)
         NEP2_photon = numpy.trapz(integrand, data['nu'])
         datasrc[i]['NEP_photon'] = numpy.sqrt(NEP2_photon)
@@ -73,9 +75,9 @@ def optical_calcs(data, datasrc):
         # update eta_tot for the next loop through here
         # eta_tot is the optical effiency between the relevant element and the bolo.
         eta_tot = eta_tot*(1-datasrc[i]['eps'])
-        print eta_tot
         #sum to get total
         data['Qtot'] = data['Qtot'] + datasrc[i]['Q']
+	print numpy.sqrt(NEP2_photon)/data['dPdT_cmb']
         NEP2_photon_total = add(NEP2_photon_total, NEP2_photon)
         data['T_RJ_tot'] = data['Qtot']/data['dPdT_RJ']
         data['NEP_photon_total'] = numpy.sqrt(NEP2_photon_total)
@@ -149,7 +151,7 @@ def bolo_calcs(data):
     kappa = data['W']/(Tbolo**n - Tbase**n)
     G = n*kappa*Tbolo**(n-1)
     P_el = data['W'] - data['Qtot']
-    Lg = (P_el*alpha/(G*Tbolo))
+    Lg = (data['W']*alpha/(G*Tbolo))
     I_0 = numpy.sqrt(P_el/R0)
     #effective time consant (for zero bias inductance ?????)
     tau_eff = tau_0*(1+beta+R_rat)/(1+beta+R_rat+(1-R_rat)*Lg)
@@ -195,17 +197,17 @@ def bolo_calcs(data):
     #If we've done the optical calculations and have dPdT values, we can get
     #NET on the sky. Otherwise, return NET as 0.
     if 'dPdT_RJ' in data:
-        data['Phonon']['NET_RJ'] = data['Phonon']['NEP']/data['dPdT_RJ']
-        data['Johnson']['NET_RJ'] = data['Johnson']['NEP']/data['dPdT_RJ']
-        data['Readout']['NET_RJ'] = data['Readout']['NEP']/data['dPdT_RJ']
+        data['Phonon']['NET_RJ'] = data['Phonon']['NEP']/data['dPdT_RJ']**2
+        data['Johnson']['NET_RJ'] = data['Johnson']['NEP']/data['dPdT_RJ']**2
+        data['Readout']['NET_RJ'] = data['Readout']['NEP']/data['dPdT_RJ']**2
     else:
         data['Phonon']['NET_RJ'] = 0
         data['Johnson']['NET_RJ'] = 0
         data['Readout']['NET_RJ'] = 0
     if 'dPdT_cmb' in data:
-        data['Phonon']['NET_CMB'] = data['Phonon']['NEP']/data['dPdT_cmb']
-        data['Johnson']['NET_CMB'] = data['Johnson']['NEP']/data['dPdT_cmb']
-        data['Readout']['NET_CMB'] = data['Readout']['NEP']/data['dPdT_cmb']
+        data['Phonon']['NET_CMB'] = data['Phonon']['NEP']/data['dPdT_cmb']**2
+        data['Johnson']['NET_CMB'] = data['Johnson']['NEP']/data['dPdT_cmb']**2
+        data['Readout']['NET_CMB'] = data['Readout']['NEP']/data['dPdT_cmb']**2
     else:
         data['Phonon']['NET_CMB'] = 0
         data['Johnson']['NET_CMB'] = 0
@@ -220,4 +222,5 @@ def bolo_calcs(data):
     data['kappa'] = kappa
     data['tau_i'] = tau_i
     data['s_w'] = s_w
-    return data
+    #return data
+    #print data['Phonon']['NEP'], data['Johnson']['NEP'], data['NEP_photon_total']

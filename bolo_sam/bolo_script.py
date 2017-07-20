@@ -38,8 +38,9 @@ def run(name):
     #data['Qtot'] (calculated by optical_calcs, or explicitly defined if you don't run that)
     #note: P_elec = data['W'] - data['Qtot']
     bolo_module.bolo_calcs(data)
+    NEP_total = 0
     # Print out a table of values for each source
-    print ' \t   Source\t',
+    """print ' \t   Source\t',
     print ' eps \t',
     print ' T_src',
     print 'eta_to_bolo',
@@ -56,7 +57,7 @@ def run(name):
         print "%10.3e" %datasrc[i]['NEP_photon'],
         print "%12.3e" %datasrc[i]['NET_photon_RJ'],
         print "%12.3e" %datasrc[i]['NET_photon_cmb']
-    NEP_total = numpy.sqrt(data['NEP_photon_total']**2 + data['Phonon']['NEP']**2 + data['Johnson']['NEP']**2 + data['Readout']['NEP']**2)
+    NEP_total = numpy.sqrt(data['NEP_photon_total']**2 + data['Johnson']['NEP'][0]**2 + data['Phonon']['NEP']**2)
     NET_cmb_total = NEP_total/data['dPdT_cmb']/numpy.sqrt(2) # uKrtsec rather than uK/rtHz
     # print out the totals
     print 'Total: ----------------------------------------------'
@@ -67,10 +68,10 @@ def run(name):
     print ' NEP_photon_total = ' "%10.3e" %data['NEP_photon_total']
     print ' NEP_phonon_total = ' "%10.3e" %data['Phonon']['NEP']
     print ' NEP_Johnson_total = ' "%10.3e" %data['Johnson']['NEP'][0]
-    print ' NEP_Readout_total = ' "%10.3e" %data['Readout']['NEP'][0]
+    #print ' NEP_Readout_total = ' "%10.3e" %data['Readout']['NEP'][0]
     print ' NET_photon_total_RJ = ' "%10.3e" %data['NET_photon_total_RJ']
     print ' NET_photon_total_cmb = ' "%10.3e" %data['NET_photon_total_cmb']
-    print ' NEP_total = ' "%10.3e" %NEP_total[0]
-    print ' NET_cmb_total = ' "%10.3e" %NET_cmb_total[0],
+    print ' NEP_total = ' "%10.3e" %NEP_total#[0]
+    print ' NET_cmb_total = ' "%10.3e" %NET_cmb_total#[0],
     print 'uKrtsec'
-    print '-----------------------------------------------------' 
+    print '-----------------------------------------------------' """

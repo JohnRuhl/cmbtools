@@ -1,96 +1,95 @@
 # -*- coding: utf-8 -*-
 # Main execution file
 
-import numpy as np
-from dataExtractor import extractData  # this extracts the data from a txtfile containing the Lamda Data
-import fittingFunctions as fit         # best fit functions
-import Equations as eqn                # file with most of the used equations
-import plottingFunctions as pltfn      # handles all plotting
-from MonteCarlo import MonteCarlo      # runs the monte carlo
-from Classes import dataClass          # all the classes
-
 '''
 Document Info
 - Function of L
 '''
 
-'''
-Notes to Self
-the best fit function sometimes doesn't work great if the errors are wierd
-change nu0 to a real value?
-the MonteCarlo function first does a plt.hist then passes that to a plt.bar. Change that.
-    make the bins be the same as in lBins(histoDataA, histoDataB, aMean, bMean
-move the non-Equation functions out of Equations
-dust temperature is never called should it be?
-'''
+import numpy as np
+import matplotlib.pyplot as plt
+import FittingFunctions as fit         # best fit functions
+import ModelEquations as meqn          # file with most of the used ModelEquations
+import RealizationEquations as reqn    # file with most of the used realization equations
+import Functions as fn                 # file with most of the functions
+# import plottingFunctions as pltfn      # handles all plotting
+import Dictionaries as dct             # lDict and constants
+# import lmfit as lmfit
+from Classes import ModelClass          # all the classesf
 
 
-# ------------------------------------------
-# Constants
+###############################################################################################
+                            # Files, Constants & Parameters
 
-# making a dictionary with all the angle l values as the x-axis
-lDict = dict(lMin=40, lMax=400, lStep=20)  # minimum l value used, maxiumm l value used, l-step value for binning,
-lDict.update(lList=[l for l in range(lDict['lMin'], lDict['lMax'])]) # x axis for all plots
-lDict.update(lBins=range(lDict['lMin'], lDict['lMax']+lDict['lStep'], lDict['lStep'])) # list of bins
-lDict.update(lBinCent=eqn.binCenter(lDict['lBins'])) # finding bin centers
+# Files
+# lamda_data_filename = 'LAMDA Data'
+# BB_errors = 'BB_errors.txt'
 
-# Reference dictionary# Reference dictionary of constants of constants
-const = dict(nu1=90.0*(10**9), nu2=150.0*(10**9), nu0=1.0, h=6.62606957*(10**-34),
-             c=299792458, k=1.3806488*(10**-23), TVac=2.7, TDust=19.6)
-             # frequency 1, frequency 2, reference frequency, Planck's constant,
-             # speed of light, Boltzmann constant, vacuum temp, dust temp
-const.update(list=[const['h'], const['c'], const['k'], const['TVac'], const['TDust']])
+# making a dictionary with all the l values as the x-axis
+lDict = dct.make_lDict(list(range(int(1e3))), lMin=50, lMax=100)
+# Reference dictionary of constants
+const = dct.make_Const()
+# Reference dictionary of frequencies
+freqDict, freqs = dct.make_frequencies(90., 150., 212., 242)
+ModelClass.freqs = freqs  # adds freqs to ModelClass
 
+# Model Equation Parameter Inputs
+mparams, mparams_sq, mparams_sin = meqn.makeParamInputs([1., 2, 4, 80, 10, -np.pi/2])
 
-# ------------------------------------------
-# Creating functions
-
-# ----- Function Lists -----
-# Theory data
-Dust = dataClass('Dust', [eqn.dustRatio(const)*eqn.dust(l) for l in lDict['lList']])       # Dust of l
-BMode = dataClass('BMode', extractData("LAMDA Data")[lDict['lMin']:lDict['lMax']])         # BB(l) extracted from file
-Theory = dataClass('Theory', (Dust.data+BMode.data))                                       # the theoretical curve
-# Measured data
-Measured = dataClass('Measured', [np.random.normal(T, T/10) for T in Theory.data])         # the added noise is fake data until recieve real data
-Measured.error = eqn.error(Measured.data, pct=0.2, mtd=1)                                  # the error in the measured data
-# Best fit. Not for important use since not binned. referenced as "r-"
-rTheoryList = [Dust.data, BMode.data]                                                      # concatenation of Dust and BB
-rFitCoeff = fit.matrixFit(rTheoryList, Measured.data, Measured.error)                      # getting the best fit coefficients of theory to measured data
-Dust.fitCoeff, BMode.fitCoeff = rFitCoeff[:]
-rBestFit = dataClass('Best Fit', (Dust.data*rFitCoeff[0]+BMode.data*rFitCoeff[1]))         # best fit to measured by [coeffs * theory]
-
-# -----  Binned Function Lists -----
-# Theory data
-DustBin = dataClass('DustBin', eqn.binData(Dust.data, lDict['lList']))                     # binned Dust
-DustBin.error = eqn.error(DustBin.data, pct=0.2, mtd=1)                                    # error in binned Dust
-BModeBin = dataClass('BModeBin', eqn.binData(BMode.data, lDict['lList']))                  # binned BB
-BModeBin.error = eqn.error(BModeBin.data, pct=0.2, mtd=1)                                  # error in binned BB
-TheoryBin = dataClass('TheoryBin', (DustBin.data+BModeBin.data))                           # the theoretical curve
-TheoryBin.error = eqn.error(TheoryBin.data, pct=0.1, mtd=1)                                # error in theoretical curve      # Important for MonteCarlo
-# Measured data
-MeasuredBin = dataClass('MeasuredBin', eqn.binData(Measured.data, lDict['lList']))         # binned measured data
-MeasuredBin.error = eqn.error(MeasuredBin.data, pct=0.2, mtd=1)                            # error in binned measured data
-# Best Fit
-theoryList = [DustBin.data, BModeBin.data]                                                 # concatenation of binned Dust and binned BB
-fitCoeff = fit.matrixFit(theoryList, MeasuredBin.data, MeasuredBin.error)                  # best fit of Measured Bin to
-DustBin.fitCoeff, BModeBin.fitCoeff = fitCoeff[:]
-bestFit = dataClass('Best Fit', (DustBin.data*fitCoeff[0]+BModeBin.data*fitCoeff[1]))      # best fit to MeasuredBin by [coeffs * theory]
-bestFit.error = eqn.error(bestFit.data, pct=0.2, mtd=1)                                    # error in best fit
+# Realization Equation Parameter Inputs
+rparams, rparams_sq, rparams_sin = reqn.makeParamInputs([2., 3., 5., 100., 10.])
 
 
-# ------------------------------------------
-# Plotting Stuff
+###############################################################################################
+                                      # Data
 
-# Fit Plots
-pltfn.plotScatter(lDict['lList'], Measured, BMode, Dust, rBestFit, Theory)
-pltfn.plotErrorbar(lDict['lBinCent'], MeasuredBin, BModeBin, DustBin, bestFit, TheoryBin)
+#########################################
+          # Theoretical Models
+# ----------------------------
+          # Poly Model
+Poly = ModelClass("poly", {"model": "model", "equation": {"func": meqn.polySignal, "inputs": (lDict["lList"], "freqs"), "params": mparams_sq}})
+Poly.add_model({"model": "rlz", "equation": {"func": reqn.polySignal, "inputs": (lDict["lList"], "freqs"), "params": rparams_sq},
+                "error": {"func": reqn.polyError, "inputs": (lDict["lList"], "freqs"), "params": rparams_sq}})
 
-# MonteCarlo
-histoDataA, histoDataB, aMean, bMean, plotFit, aList, bList = MonteCarlo(theoryList, TheoryBin.data, TheoryBin.error, iterate=10**4)   # Monte Carlo of _________
-pltfn.plotHisto(histoDataA, histoDataB, aMean, bMean, fitCoeff)
-pltfn.plotCorrelation(aList, bList, plotFit, aMean, bMean)
+# ----------------------------
+          # Sin Model
+Sin = ModelClass("sin", {"model": "model", "equation": {"func": meqn.sineSignal, "inputs": (lDict["lList"], "freqs"), "params": mparams_sin}},
+                 {"model": "rlz", "equation": {"func": reqn.sineSignal, "inputs": (lDict["lList"], "freqs"), "params": rparams_sin}})
+                 # "error": {"func": lambda x, *args: 2., "inputs": None, "params": (None,)}})
 
-# seeing some outputs
-print "fitCoeff {}".format(fitCoeff)
-print "aCoeff - aMean = {}".format(DustBin.fitCoeff - aMean)
-print "bCoeff - bMean = {}".format(BModeBin.fitCoeff - bMean)
+# ----------------------------
+          # Theory Model
+Theory = ModelClass("sin", {"model": "model", "equation": {"func": meqn.totalSignal, "inputs": (lDict["lList"], "freqs"), "params": mparams}})
+Theory.add_model({"model": "rlz", "equation": {"func": reqn.totalSignal, "inputs": (lDict["lList"], "freqs"), "params": rparams},
+                    "error": {"func": reqn.totalError, "inputs": (lDict["lList"], "freqs"), "params": rparams}})
+
+# ###############################################################################################
+#                                     # Fitting
+ChiData = fit.MonteCarloClass(Theory.rlz, Theory.model.eqn.params, Poly.model, Sin.model)
+
+x = [fitwith.eqn.inputs for fitwith in ChiData.fitwith]
+print(x)
+print(ChiData.freqmodel(x, *ChiData.params))
+
+p, C, full = ChiData.runMC(iterate=1e3, print_out=True)
+# # ChiData.finalizeOpt()
+# # print(ChiData.rlz.eqn.evaln)
+
+
+# # ###############################################################################################
+# #                                     # Outputs
+
+# fig = plt.figure()
+# ax = fig.add_subplot(211, title=r"$title$", xlabel=r"$xlabel$", ylabel=r"$ylabel$")
+# ax.errorbar(lDict["lList"], ChiData.measured.evaln, yerr=ChiData.measured.d_evaln, fmt="c", label="rlz")
+# [ax.plot(lDict["lList"], ChiData.fitwith[i].evaln, "k-.", label="model{}".format(i)) for i in range(len(ChiData.fitwith))]
+# ax.plot(lDict["lList"], np.sum([ChiData.fitwith[i].evaln for i in range(len(ChiData.fitwith))], axis=0), "go", label="cumul")
+# ax.plot(lDict["lList"], Theory.model.evaln, "g--", label="model")
+# ax.minorticks_on()
+# ax.legend(loc="best", numpoints=1)
+
+# ax2 = fig.add_subplot(212, title=r"$title$", xlabel=r"$xlabel$", ylabel=r"$ylabel$")
+# [ax2.plot(lDict["lList"], np.abs((ChiData.fitwith[i].eqn.evaln-ChiData.measured.evaln)/ChiData.measured.evaln), "r--", label="model{}".format(i)) for i in range(len(ChiData.fitwith))]
+# # ax2.plot(lDict["lList"], np.abs((ChiData.fitwith.eqn.func(ChiData.fitwith.eqn.inputs, *ChiData.params)-ChiData.measured.evaln)/ChiData.measured.evaln), "r--", label="model")
+
+# plt.savefig("outputs.png")

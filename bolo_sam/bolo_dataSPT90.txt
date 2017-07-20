@@ -33,7 +33,7 @@ data['T_bolo'] = 0.5
 data['T_base'] = 0.28 #note: we use W, n, and these T's to calculate dynamic G
 
 # These need to be in order, from detector to CMB
-datasrc1 = {'name':'antenna', 'eps':0., 'T':0.25, 'tau':1.}
+datasrc1 = {'name':'antenna', 'eps':0., 'T':0.25, 'tau':1}
 datasrc2 = {'name':'lenslet', 'eps':0., 'T':0.25, 'tau':1.}
 datasrc3 = {'name':'collimating lens', 'eps':0.052, 'T':5.0, 'tau':1.}
 datasrc4 = {'name':'stop', 'eps':0.39, 'T':5.0, 'tau':1.}
@@ -47,7 +47,7 @@ datasrc11 = {'name':'window alumina', 'eps':0.013, 'T':60.0, 'tau':1.}
 datasrc12 = {'name':'flat mirror', 'eps':0.01, 'T':280., 'tau':1.}
 datasrc13 = {'name':'secondary', 'eps':0.01, 'T':280., 'tau':1.}
 datasrc14 = {'name':'primary', 'eps':0.01, 'T':220., 'tau':1.}
-datasrc15 = {'name':'atm', 'eps':0.097, 'T':230.0, 'tau':1.} 
-datasrc16 = {'name':'CMB', 'eps':1., 'T':2.73, 'tau':1.0}
+datasrc15 = {'name':'atm', 'eps':0.097, 'T':230.0, 'tau':.9} 
+datasrc16 = {'name':'CMB', 'eps':1., 'T':2.73, 'tau':0.}
 datasrc = [datasrc1, datasrc2, datasrc3, datasrc4, datasrc5, datasrc6, datasrc7, datasrc8,\
 datasrc9, datasrc10, datasrc11, datasrc12, datasrc13, datasrc14, datasrc15, datasrc16]

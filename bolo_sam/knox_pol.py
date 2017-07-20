@@ -150,14 +150,14 @@ cov_EE = cov_Cls[:,2];
 cov_BB = cov_Cls[:,3];
 cov_TE = cov_Cls[:,4];
 
-"""plt.plot(ell, Cls[:,3])
+plt.plot(ell, Cls[:,3])
 plt.suptitle('ell vs. Cls')
-plt.show()"""
+plt.show()
 
-"""# plots
+# plots
 f = l*(l+1)/(2*numpy.pi);  # conversion back to D_ell...
 ax = plt.subplot(111)
-plt.errorbar(l, f*Cls[:,3], xerr=0, yerr=f*numpy.sqrt(cov_BB), linewidth=1.5)
+plt.errorbar(l, f*cov_BB, xerr=0, yerr=f*numpy.sqrt(cov_BB), linewidth=1.5)
 ax.set_yscale("log", nonposy='clip')
 ax.set_ylim(0.001,0.1)
 
@@ -180,4 +180,4 @@ axx.get_minor_ticks()
 
 ax.xaxis.grid(True,'major')
 ax.yaxis.grid(True,'major')
-ax.yaxis.grid(True,'minor')"""
+ax.yaxis.grid(True,'minor')
