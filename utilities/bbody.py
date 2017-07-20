@@ -35,13 +35,30 @@ def Brj(nu,T):
     c= 2.99792458e8  
     h = 6.626068e-34
     k = 1.3806503e-23
-    x = (h*nu)/(k*T)
 
     # Factor of 2 on RHS means this is for 2 polarizations
     brightness = 2.*k*T*(nu/c)**2
 
     return brightness
 
+#-------------------------------------------------
+def Trj(B,nu):
+    '''
+    Rayleigh-Jeans temperature as a function 2-polarizaiton brightness in W/m^2/sr/Hz).
+    Frequency (nu) must be in Hz.
+    Trj = B(nu,T)/( 2.*k*(nu/c)**2 )
+    '''
+
+    # Frequency vector must be in Hz.
+    # Physical constants in SI units
+    c= 2.99792458e8  
+    h = 6.626068e-34
+    k = 1.3806503e-23
+
+    # Factor of 2 on RHS means this is for 2 polarizations
+    Trj = B/( 2.*k*(nu/c)**2 )
+
+    return Trj
 
 #-------------------------------------------------
 def dBnudT(nu,T):
@@ -75,14 +92,36 @@ def dBnudTrj(nu,T):
     # Frequency vector must be in Hz.
     # Physical constants in SI units
     c= 2.99792458e8  
-    h = 6.626068e-34
     k = 1.3806503e-23
-    x = (h*nu)/(k*T)
 
     # Factor of 2 on RHS means this is for 2 polarizations
     dBdT = 2.*k*(nu/c)**2
 
     return dBdT
+
+#-------------------------------------------------
+def dTrjdT(nu,T):
+    '''
+    Derivative of dTrj/dT
+    Frequency (nu) must be in Hz.
+    '''
+
+    # Frequency vector must be in Hz.
+    # Physical constants in SI units
+    c= 2.99792458e8
+    h = 6.626068e-34
+    k = 1.3806503e-23
+    x = (h*nu)/(k*T)
+
+    prefac = 2*h**2/(k*c**2)
+    expx = numpy.exp(x)
+    dBdT = prefac*(nu**4/T**2)*(expx/(expx - 1)**2)
+
+    dBdTrj = 2.*k*(nu/c)**2
+
+    dTrjdT = dBdT/dBdTrj
+
+    return dTrjdT
 
 #-------------------------------------------------
 
