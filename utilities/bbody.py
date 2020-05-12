@@ -21,6 +21,26 @@ def Bnu(nu,T):  # Calculate the planck blackbody brightness in W/m^2/sr/Hz
 
     return brightness
 
+#-------------------------------------------------
+def Blambda(lam,T):  # Calculate the planck blackbody brightness in W/m^2/sr/Hz
+    '''
+    Planck blackbody brightness function (2 polarizations, in W/m^2/sr/m).
+    Wavelength vector (lam) must be in meters.
+    Bnu(lam,T) = 2.*(h*c**2)/(lam**5)* (1./(numpy.exp(x) - 1.))
+    '''
+
+    # Physical constants in SI units
+    c= 2.99792458e8
+    h = 6.626068e-34
+    k = 1.3806503e-23
+    x = (h*c)/(lam*k*T)
+
+    # Factor of 2 on RHS means this is for 2 polarizations
+    brightness = 2.*(h*c**2)/(lam**5)* (1./(numpy.exp(x) - 1.))
+
+    return brightness
+
+
 
 #-------------------------------------------------
 def Brj(nu,T):
@@ -135,7 +155,7 @@ def BBintegrate_1mode(nulow,nuhi,T):
 
     lambdavec = c/nuvec
     AOmegavec = lambdavec**2   # single mode
-    integrand = AOmegavec*Bnu(nuvec,T)
+    integrand = AOmegavec*Bnu(nuvec,T)/2.  # dividing by 2 to get single polarization
 
     power = numpy.trapz(integrand,nuvec)
 
@@ -144,7 +164,7 @@ def BBintegrate_1mode(nulow,nuhi,T):
 
 def BBintegrate_surface(nulow,nuhi,T,AOmega):
         '''
-        Integrate Bnu from nuhi to nulow, return total, for a single mode single polarization detector.
+        Integrate Bnu from nuhi to nulow, return total, for fixed AOmega, 2 polarizations.
         '''
         c= 2.99792458e8
         dnu = (nuhi-nulow)/1000.

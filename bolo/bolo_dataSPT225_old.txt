@@ -17,8 +17,8 @@ c = float(299792456)
 h = 6.626068e-34
 k = 1.3806503e-23
 T_cmb = 2.725 #Kelvin
-band_width = 52.3  # GHz
-band = 223.0  #GHz
+band = 222.2 #GHz
+band_width = 51.9  # GHz
 data = {'nuGHZ':numpy.arange(band - 0.5*band_width, band + 0.5*band_width,band_width/1000., dtype = float)}
 data['nu'] = data['nuGHZ']*float(1e9)
 

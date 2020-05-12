@@ -34,17 +34,31 @@ planck90={'title': 'Planck, 90GHz, 1 year',
         'lowestell': 2,
         }
 
+
 # spider, 3 telescopes at 150GHz, McMurdo
 spider={'title': 'Spider, 3 telescopes, 1 McMurdo flight',
         'freq' : 150,   #GHz
         'net': 130,  # uKrtsec_cmb
-        'days': 18,  #days in an LDB flight
+        'days': 0.7*15,  #days in an LDB flight
         'fwhm': 30,  #arcmin   
-        'ndet': int(0.8*3*(4*2*64)), # 3 telescopes, 80% yield
-        'sqdeg': 2700,  #sky area coverage
-        'deltaell': 20,
-        'topbin': 400,
-        'lowestell': 40,
+        'ndet': int(0.5*3*(4*2*64)), # 3 telescopes, 50% yield
+        'sqdeg': 4000.,  #sky area coverage
+        'deltaell': 50,
+        'topbin': 425,
+        'lowestell': 25,
+        }
+
+# taumachine, 1000 detectors at 150GHz, Wanaka, 30 day flight
+taumachine={'title': 'TauMachine, 1 flight, 150GHz only',
+        'freq' : 150,   #GHz
+        'net': 80,  # uKrtsec_cmb
+        'days': 0.5*10,  #ULDB, nights
+        'fwhm': 30,  #arcmin   
+        'ndet': 1000, # 
+        'sqdeg': 20000.,  #sky area coverage
+        'deltaell': 1,
+        'topbin': 100,
+        'lowestell': 4,
         }
 
 # keck at 3 telescopes, 1 year
@@ -133,8 +147,10 @@ polar10={'title': 'Polar10, 2000sqdeg',
         
 ####################################################################
 # set which experiment, basefile.
-expt = spider
-basefile = 'camb_24109479_lensedtotcls.dat'  # lensed with r= 0.01
+expt = taumachine
+#basefile = 'camb_24109479_lensedtotcls.dat'  # lensed with r= 0.01
+basefile = '/Users/ruhl/camb_runs/Standard_PlanckTau0.055_r=0.0/camb_25839877_lensedtotcls.dat'  # lensed, r=0.0, planck tau
+
 baseCls = numpy.loadtxt(basefile)  # T_0^2*ell*(ell+1) * C_ell / (2*pi)  (uK^2)
 
 data = knox_func(expt,baseCls)
@@ -145,28 +161,37 @@ cov_Cls = data['cov_Cls']
 # save data to a file;  overwrites.
 # These are the actual Cls (not l(l+1)Cl ) and cov on those.  
 # (ie not D_l's)
-numpy.save('covCls.dat', cov_Cls)
-numpy.save('Cls.dat', Cls)
+#numpy.save('covCls.dat', cov_Cls)
+#numpy.save('Cls.dat', Cls)
 
 l = cov_Cls[:,0]
+labels = ['TT','EE','BB','TE']
 cov_TT = cov_Cls[:,1]
 cov_EE = cov_Cls[:,2]
 cov_BB = cov_Cls[:,3]
 cov_TE = cov_Cls[:,4]
 
+f = l*(l+1)/(2*numpy.pi)  # conversion back to D_ell...
+
 # plots
 pylab.figure(1)
-f = l*(l+1)/(2*numpy.pi)  # conversion back to D_ell...
+pylab.clf()
 ax = plt.subplot(111)
-plt.errorbar(l, f*Cls[:,3], xerr=0, yerr=f*numpy.sqrt(cov_BB), linewidth=1.5)
-ax.set_yscale("log", nonposy='clip')
-ax.set_ylim(0.001,0.1)
+for XX in range(4):
+    YY= XX+1
+    plt.errorbar(l, numpy.abs(f*Cls[:,YY]), xerr=0, yerr=f*numpy.sqrt(cov_Cls[:,YY]), linewidth=1.5,label=labels[XX])
 
+pylab.plot(l,f*numpy.sqrt(cov_BB))
+
+ax.set_yscale("log", nonposy='clip')
+ax.set_ylim(0.0001,100)
+pylab.legend()
 ax.set_title(expt['title'], fontsize=16)
 ax.set_xlabel('$l$', fontsize=16)
-ax.set_ylabel(r'$C_l^{BB}$', fontsize=16)
+ax.set_ylabel(r'$C_l^{XX}$', fontsize=16)
 ax.tick_params(axis='both', which='major', labelsize=14)
-
 ax.xaxis.grid(True,'major')
 ax.yaxis.grid(True,'major')
 ax.yaxis.grid(True,'minor')
+
+pylab.show()
