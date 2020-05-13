@@ -81,6 +81,19 @@ def Trj(B,nu):
     return Trj
 
 #-------------------------------------------------
+def Idust(nu,T,beta,e0,nu0):
+    '''
+    Dust brightness in W/m^2/sr/Hz, 2 polarizations.
+    nu in Hz.
+    beta is dust spectral index, e0 is the emissivity at nu0.
+    '''
+
+    I = e0*((nu/nu0)**beta)* Bnu(nu,T)
+
+    return I
+
+
+#-------------------------------------------------
 def dBnudT(nu,T):
     '''
     Derivative of Bnu(2 polarization, in W/m^2/sr/Hz) with respect to T.

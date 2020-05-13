@@ -37,7 +37,7 @@ def BModeSignal(BMode, parameters):
 def dustSignal((lList, const, frequency), parameters):
     ''' Creates the dust signal
         format: ((lList, const), parameters)
-        const holds the constants
+        onst holds the constants
         parameters is the list of fit parameters.
             parameters = [amplitude, exponent, dust temperature]
             They are *added* to their respetive theoretical values

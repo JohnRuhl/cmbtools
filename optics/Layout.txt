@@ -1,0 +1,42 @@
+
+Intended organization of this code.
+
+Questions to answer:
+  - 1:  for gaussian feed, or square feed, what is aperture efficiency for 
+	LAT, SAT?
+  - 2:  for same feeds, what is the diffracted beam after circular stop?
+  - 3:  What is far field of some pattern of panel gaps?
+  
+
+BeamFromAperture.py
+   input: Aperture plane map, physical scale, wavelength
+   FFT it to get kx,ky plane map
+   Convert that to angular map
+   output:  A dictionary with angular map, and scales for that.
+
+BeamToScreen.py
+   input screen, screensize, Beam_dict, distance
+   Generate x,y arrays covering screen.
+   Use beam_dict to make a 2D interpolating function,
+    then interpolate that onto the screen.
+   
+
+ApEff.py
+   input:  E-field at aperture, and aperture mask.  Same screen for both.
+   integrate power over aperture, vs whole.
+   output: aperture efficiency
+
+BeamAfterStop.py
+   input: beam at stop, and stop mask
+   truncate beam with mask
+   Call BeamFromAperture.py to get far field beam in angular coordinates
+   output: angular map, and scales for that.
+
+ApertureFunctions.py
+ functions to return useful 2D patterns for E-field distributions or masks
+  - gaussian(center, sigma)
+  - circle(center, radius)
+  - square(center,fullwidth)
+  - horizontal slits ?
+  - vertical slits ?
+
