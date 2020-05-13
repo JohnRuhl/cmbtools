@@ -1,0 +1,93 @@
+
+
+Github setup --------------------------------------------------------
+
+Sign up for an account at github.com
+
+1) Generate an ssh key pair with the following command 
+(replacing "yourpassphrase" by something suitably secure):
+
+ssh-keygen -t rsa -N 'yourpassphrase' -f ~/.ssh/${USER}_git_key
+
+Or, use the github client to set you up, in which case your key will end up somewhere like ~/.ssh/github_rsa
+
+
+2) Add the following text to your ~/.ssh/config file (except with your username in place of ${USER}):
+
+Host git.hub
+ User git
+ Port 22
+ Hostname github.com
+ IdentityFile ~/.ssh/${USERNAME}_git_key
+ TCPKeepAlive yes
+ IdentitiesOnly yes
+
+
+Local setup --------------------------------------------------------
+
+Decide where you're going to put your repositories.  I have mine in my ~/code/ directory.
+
+If you want to use my tools, you should "clone" my repository, which will allow you to use git to update them later.  (My repository is currently read-only, so you won't be able to upload changes.)
+
+To clone it, go to your relevant code directory and run
+
+git clone https://github.com/JohnRuhl/cmbtools.git
+
+
+Setting up your own repository -------------------------------------
+
+I start my repositories using the github web page, rather than from the command line.  Log in there,
+and you'll find a button (upper right, looks like a plus sign), which has a drop-down option to 
+create a new repository.  Give it a sensible name.
+
+Once you've done that, repeat the above steps to clone it to your local machine, of course replacing
+"JohnRuhl/cmbtools.git" with the relevant pointer to your repository.
+
+--------------------------------------------------------------------
+Basic workflow:
+
+The basic workflow is:
+  "git pull"   # gets changes others have made
+  Edit your files, etc
+  "git add"    # tell git to pay attention to any new files or directories you created
+  "git commit" # tell git to memorize all the changes you've done.
+  "git push"   # upload all those changes to the repository on github. 
+
+In more detail:
+
+1) To download any changes and bring your local copy up-to-date, use the command
+
+git pull
+
+
+2) Once you've made edits, you can save them to your local repository with 
+
+git commit filename
+
+or
+
+git commit -a
+
+(Using "-a" for "all files".) 
+This should open an editor for you to write a message describing your commit. Please do so.
+The git commit command only changes your local repository, not the version on github. 
+
+
+3) To send your committed changes to the github repository, type
+
+git push
+
+If the remote repository has changed since you pulled your version, you'll need to run a "git pull" before you're allowed to push. If git isn't sure how to merge your changes and the changes in the repository, then it will tell you, and you'll need to merge the file(s) by hand and commit the merged files before doing a "git push".
+
+You can view a history of changes with
+
+git log
+
+And the "git help" command will give you usage details on any command.
+
+4) If you want to remove a file from the repository, use
+
+git rm filename
+then git commit, git push.
+
+
